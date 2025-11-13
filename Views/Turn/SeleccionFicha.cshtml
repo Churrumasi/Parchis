@@ -1,0 +1,21 @@
+@model caso_de_uso_6_ejercer_turno.Models.Domain.Player
+@{
+    ViewData["Title"] = "Seleccionar ficha";
+    Layout = "/Views/Shared/_Layout.cshtml";
+    var valor = ViewBag.ValorDado ?? 0;
+}
+<div class="big">¿Cuántas casillas avanzarás?</div>
+<p>Valor del dado: <strong>@valor</strong></p>
+<p>Jugador: <strong>@(Model?.Nombre ?? "Jugador")</strong></p>
+
+<div style="margin-top:20px;">
+    <p>Selecciona la ficha que quieras mover:</p>
+    <button class="btn" onclick="moverFicha(0, -1, @(valor))">Ficha 1</button>
+    <button class="btn" onclick="moverFicha(1, -1, @(valor))">Ficha 2</button>
+    <button class="btn" onclick="moverFicha(2, -1, @(valor))">Ficha 3</button>
+    <button class="btn" onclick="moverFicha(3, -1, @(valor))">Ficha 4</button>
+</div>
+
+<p style="margin-top:30px;">
+    <a class="btn" onclick="pasarTurno()">No mover / Pasar turno</a>
+</p>

@@ -1,0 +1,22 @@
+@*
+  _Layout.cshtml - simple layout for demo
+*@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Parchís - @ViewData["Title"]</title>
+    <script src="~/js/turn.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align:center; padding: 20px; }
+        .big { font-size: 48px; font-weight: bold; margin: 30px; }
+        .dice { font-size: 72px; width: 140px; height:140px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; border: 3px solid #444; cursor:pointer; user-select:none;}
+        .btn { padding: 10px 20px; border-radius:8px; display:inline-block; margin:10px; cursor:pointer; background:#2b6fd6; color:white; text-decoration:none;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        @RenderBody()
+    </div>
+</body>
+</html>

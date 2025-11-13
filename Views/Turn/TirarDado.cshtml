@@ -1,0 +1,15 @@
+@model caso_de_uso_6_ejercer_turno.Models.Domain.Player
+@{
+    ViewData["Title"] = "Tirar dado";
+    Layout = "/Views/Shared/_Layout.cshtml";
+}
+<div class="big">Tirar dado</div>
+<p>Jugador: <strong>@(Model?.Nombre ?? "Jugador")</strong></p>
+
+<div style="margin-top:30px;">
+    <div id="dice" class="dice" onclick="lanzarDado()">🎲</div>
+</div>
+
+<div style="margin-top:40px;">
+    <a class="btn" href="/Turn/Inactividad">Esperar (simular inactividad)</a>
+</div>

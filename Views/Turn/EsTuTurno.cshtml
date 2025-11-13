@@ -1,0 +1,8 @@
+@model caso_de_uso_6_ejercer_turno.Models.Domain.Player
+@{
+    ViewData["Title"] = "Es tu turno";
+    Layout = "/Views/Shared/_Layout.cshtml";
+}
+<div class="big">¡ES TU TURNO!</div>
+<p>Turno de: <strong>@(Model?.Nombre ?? "Jugador")</strong></p>
+<a class="btn" href="/Turn/TirarDado">Avanzar - Tirar dado</a>
