@@ -72,5 +72,12 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             _turnManager.FinalizarTurno();
             return Json(new { ok = true });
         }
+
+        [HttpGet]
+        public IActionResult EstadoPartida()
+        {
+            var gs = _turnManager.GetGameState();
+            return Json(gs);
+        }
     }
 }

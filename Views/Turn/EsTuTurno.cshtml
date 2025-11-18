@@ -3,6 +3,57 @@
     ViewData["Title"] = "Es tu turno";
     Layout = "/Views/Shared/_Layout.cshtml";
 }
-<div class="big">¡ES TU TURNO!</div>
-<p>Turno de: <strong>@(Model?.Nombre ?? "Jugador")</strong></p>
-<a class="btn" href="/Turn/TirarDado">Avanzar - Tirar dado</a>
+<div class="fullpage-wrapper">
+    <div class="game-shell">
+        <div class="side-panel left">
+            <div class="controls-box player-info">
+                <div class="player-name big">@(Model?.Nombre ?? "Jugador")</div>
+                <div>Color: <strong>@(Model?.ColorFichas ?? "rojo")</strong></div>
+                <div style="margin-top:8px">Estado: <strong>@(Model?.Estado ?? "esperando")</strong></div>
+            </div>
+
+            <div class="controls-box">
+                <button id="btn-pasar-turno" class="btn">Pasar turno</button>
+                <button id="btn-show-fin" class="btn secondary">Ver fin</button>
+            </div>
+        </div>
+
+        <div class="board-center">
+            <div class="board-image" id="board">
+                <div class="pieces" id="pieces">
+                    <!-- Las fichas se renderizan dinámicamente en JS para mostrar todas las piezas en tiempo real -->
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel right">
+            <div class="controls-box" style="text-align:center">
+                <div id="dice" class="dice" onclick="lanzarDado()">🎲</div>
+                <div id="dice-result" class="dice-result">Haz clic en el dado para lanzar</div>
+            </div>
+
+            <div class="controls-box" id="selection-area">
+                <div style="font-weight:700">Selecciona ficha para mover</div>
+                <div class="selection-list" id="selection-list">
+                    <button class="btn" data-action="move" data-index="0">Ficha 1</button>
+                    <button class="btn" data-action="move" data-index="1">Ficha 2</button>
+                    <button class="btn" data-action="move" data-index="2">Ficha 3</button>
+                    <button class="btn" data-action="move" data-index="3">Ficha 4</button>
+                </div>
+                <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;align-items:center">
+                    <button id="btn-toggle-mapper" class="btn secondary">Mapear tablero</button>
+                    <button id="btn-export-map" class="btn">Exportar mapeo</button>
+                    <div id="mapper-indicator" style="margin-left:6px">Mapper: <strong id="mapper-state">OFF</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="fin-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.48);align-items:center;justify-content:center">
+    <div style="background:white;padding:18px;border-radius:10px;max-width:420px;margin:auto;text-align:center">
+        <h3>Fin del turno</h3>
+        <p id="fin-text">...</p>
+        <div style="margin-top:12px"><button class="btn" onclick="closeFin()">Cerrar</button></div>
+    </div>
+</div>

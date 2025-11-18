@@ -13,6 +13,8 @@ namespace caso_de_uso_6_ejercer_turno.Services
             _bus = bus;
             _game.Jugadores.Add(new Player { Nombre = "Ana", ColorFichas = "rojo" });
             _game.Jugadores.Add(new Player { Nombre = "Luis", ColorFichas = "azul" });
+            _game.Jugadores.Add(new Player { Nombre = "María", ColorFichas = "amarillo" });
+            _game.Jugadores.Add(new Player { Nombre = "José", ColorFichas = "verde" });
         }
 
         public GameState GetGameState() => _game;
