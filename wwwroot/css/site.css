@@ -71,3 +71,19 @@ html,body{height:100%;margin:0;padding:0;background:var(--bg);color:var(--text);
     .dice{width:92px;height:92px;font-size:36px}
     .piece{width:30px;height:30px}
 }
+
+/* Estilo tipo 'login' para la página del tablero */
+.game-page-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#0ea5e9 0%, #7c3aed 50%, #fb7185 100%);z-index:9999}
+.game-card{background:white;max-width:1200px;width:100%;border-radius:28px;padding:24px;box-shadow:0 25px 60px rgba(10,10,30,0.4);position:relative;overflow:hidden}
+.game-card .decor{position:absolute;pointer-events:none}
+.decor .dot{position:absolute;border-radius:9999px;opacity:0.12}
+.decor .dot.red{background:#ef4444;width:96px;height:96px;left:28px;top:28px}
+.decor .dot.yellow{background:#f59e0b;width:120px;height:120px;right:40px;top:40px}
+.decor .dot.green{background:#10b981;width:72px;height:72px;left:40px;bottom:40px}
+.decor .dot.blue{background:#3b82f6;width:88px;height:88px;right:28px;bottom:28px}
+
+/* Ajustes dentro del card */
+.game-shell{gap:20px;padding:8px}
+.board-center{padding:12px}
+.controls-box{background:transparent;border:none;padding:0}
+.player-info{background:transparent;padding:0}
