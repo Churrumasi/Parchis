@@ -341,3 +341,4 @@ function closeFin() {
     const overlay = document.getElementById('fin-overlay');
     if (overlay) overlay.style.display = 'none';
 }
+

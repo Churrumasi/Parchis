@@ -25,17 +25,13 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         // POST: Cuenta/Login
         // ============================
         [HttpPost]
+           [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
-            if (ModelState.IsValid)
-            {
-                TempData["SuccessMessage"] = "¡Bienvenido al juego!";
-                return RedirectToAction("Index", "Game");
-            }
-
-            TempData["ErrorMessage"] = "Usuario o contraseña incorrectos";
-            return View(model);
+            // Ignorar validación/credenciales en modo demo y redirigir siempre al tablero
+            TempData["SuccessMessage"] = "Entrando al tablero...";
+            return RedirectToAction("EsTuTurno", "Turn");
         }
 
         // ============================
