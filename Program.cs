@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using caso_de_uso_6_ejercer_turno.Services;
+using caso_de_uso_6_ejercer_turno.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,10 +14,12 @@ builder.Services.AddControllersWithViews();
 // Agrega sesiones
 builder.Services.AddSession();
 
-// Tus servicios personalizados
+// servicios personalizados
 builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
 builder.Services.AddSingleton<TurnManager>();
 builder.Services.AddHostedService<GameOrchestratorHostedService>();
+builder.Services.AddScoped<UsuarioRegistradoEventHandler>();
+builder.Services.AddScoped<CuentaService>();
 
 var app = builder.Build();
 

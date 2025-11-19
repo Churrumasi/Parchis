@@ -1,33 +1,35 @@
-using Microsoft.AspNetCore.Mvc;
 using caso_de_uso_6_ejercer_turno.Models;
-using System.Threading.Tasks;
+using caso_de_uso_6_ejercer_turno.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace caso_de_uso_6_ejercer_turno.Controllers
 {
     public class CuentaController : Controller
     {
-        // GET: Account/Login
+        private readonly CuentaService _cuentaService;
+
+        public CuentaController(CuentaService cuentaService)
+        {
+            _cuentaService = cuentaService;
+        }
+
+        // ============================
+        // GET: Cuenta/Login
+        // ============================
         public IActionResult Login()
         {
             return View();
         }
 
-        // POST: Account/Login
+        // ============================
+        // POST: Cuenta/Login
+        // ============================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // Aquí iría la lógica de autenticación con tu sistema
-                // Ejemplo: validar contra base de datos, Identity, etc.
-                
-                // Simulación de login exitoso
-                // if (await _authService.ValidateUser(model.Username, model.Password))
-                // {
-                //     return RedirectToAction("Index", "Game");
-                // }
-                
                 TempData["SuccessMessage"] = "¡Bienvenido al juego!";
                 return RedirectToAction("Index", "Game");
             }
@@ -36,28 +38,25 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             return View(model);
         }
 
-        // GET: Account/Register
+        // ============================
+        // GET: Cuenta/Registrar
+        // ============================
         public IActionResult Registrar()
         {
             return View();
         }
 
-        // POST: Account/Register
+        // ============================
+        // POST: Cuenta/Registrar
+        // ============================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Registrar(RegisterViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // Aquí iría la lógica de registro
-                // Ejemplo: crear usuario en base de datos
-                
-                // if (await _authService.CreateUser(model))
-                // {
-                //     TempData["SuccessMessage"] = "¡Registro exitoso! Ya puedes jugar";
-                //     return RedirectToAction("Login");
-                // }
-                
+                await _cuentaService.RegistrarUsuarioAsync(model);
+
                 TempData["SuccessMessage"] = "¡Registro exitoso!";
                 return RedirectToAction("Login");
             }
@@ -65,20 +64,80 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             return View(model);
         }
 
-        // GET: Account/Logout
+        // ============================
+        // GET: Cuenta/Logout
+        // ============================
         public IActionResult Logout()
         {
-            // Aquí iría la lógica de cierre de sesión
-            // await HttpContext.SignOutAsync();
-            
             TempData["InfoMessage"] = "Has cerrado sesión correctamente";
             return RedirectToAction("Login");
         }
 
-        // GET: Account/ForgotPassword
+        // ============================
+        // GET: Cuenta/ForgotPassword
+        // ============================
         public IActionResult ForgotPassword()
         {
             return View();
+        }
+
+        // ============================
+        // POST: Cuenta/ForgotPassword
+        // ============================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ContraseñaOlvidadaVM model)
+        {
+            if (ModelState.IsValid)
+            {
+                TempData["SuccessMessage"] = "Si el correo existe, recibirás un email con instrucciones";
+                return RedirectToAction("ForgotPasswordConfirmation");
+            }
+
+            return View(model);
+        }
+
+        // ============================
+        // GET: Cuenta/ForgotPasswordConfirmation
+        // ============================
+        public IActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        // ============================
+        // GET: Cuenta/ResetPassword
+        // ============================
+        public IActionResult ResetPassword(string email, string token)
+        {
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Login");
+            }
+
+            var model = new ResetPasswordViewModel
+            {
+                Email = email,
+                Token = token
+            };
+
+            return View(model);
+        }
+
+        // ============================
+        // POST: Cuenta/ResetPassword
+        // ============================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                TempData["SuccessMessage"] = "Tu contraseña ha sido restablecida correctamente";
+                return RedirectToAction("Login");
+            }
+
+            return View(model);
         }
     }
 }
