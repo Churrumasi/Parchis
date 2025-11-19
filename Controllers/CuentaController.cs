@@ -18,47 +18,56 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         // ============================
         public IActionResult Login()
         {
-            return View();
+            return View(new LoginViewModel());
         }
 
         // ============================
         // POST: Cuenta/Login
         // ============================
-        [HttpPost]
-           [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model)
-        {
-            // Ignorar validación/credenciales en modo demo y redirigir siempre al tablero
-            TempData["SuccessMessage"] = "Entrando al tablero...";
-            return RedirectToAction("EsTuTurno", "Turn");
-        }
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Login(LoginViewModel model)
+{
 
+    var usuario = new
+    {
+        NombreUsuario = model.Username == null || model.Username == "" 
+                        ? "UsuarioPrueba" 
+                        : model.Username
+    };
+
+    TempData["SuccessMessage"] = "Bienvenido " + usuario.NombreUsuario + "!";
+    return RedirectToAction("EsTuTurno", "Turn");
+}
         // ============================
         // GET: Cuenta/Registrar
         // ============================
         public IActionResult Registrar()
         {
-            return View();
+            return View(new RegisterViewModel());
         }
 
         // ============================
         // POST: Cuenta/Registrar
         // ============================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Registrar(RegisterViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                await _cuentaService.RegistrarUsuarioAsync(model);
+       [HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Registrar(RegisterViewModel model)
+{
+    if (!ModelState.IsValid)
+        return View(model);
 
-                TempData["SuccessMessage"] = "¡Registro exitoso!";
-                return RedirectToAction("Login");
-            }
+    bool registrado = await _cuentaService.RegistrarUsuarioAsync(model);
 
-            return View(model);
-        }
+    if (!registrado)
+    {
+        TempData["ErrorMessage"] = "El nombre de usuario ya está registrado.";
+        return View(model);
+    }
+
+    TempData["SuccessMessage"] = "¡Registro exitoso! Ahora inicia sesión.";
+    return RedirectToAction("Login");
+}
 
         // ============================
         // GET: Cuenta/Logout

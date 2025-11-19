@@ -1,20 +1,31 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using caso_de_uso_6_ejercer_turno.Data;
+using Microsoft.EntityFrameworkCore;
 using caso_de_uso_6_ejercer_turno.Services;
 using caso_de_uso_6_ejercer_turno.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ============================================
-//        SERVICIOS
-// ============================================
+// DbContext
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ParchisDB"));
+});
+
+// MVC
 builder.Services.AddControllersWithViews();
 
-// Agrega sesiones
+//  Sesion
 builder.Services.AddSession();
 
-// servicios personalizados
+//  TempData basado en sesion 
+builder.Services.AddSingleton<
+    Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataProvider,
+    Microsoft.AspNetCore.Mvc.ViewFeatures.SessionStateTempDataProvider>();
+
+// Servicios personalizados
 builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
 builder.Services.AddSingleton<TurnManager>();
 builder.Services.AddHostedService<GameOrchestratorHostedService>();
@@ -23,9 +34,7 @@ builder.Services.AddScoped<CuentaService>();
 
 var app = builder.Build();
 
-// ============================================
-//        MIDDLEWARE
-// ============================================
+// Middleware
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -37,22 +46,22 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseSession();
+
+//  autenticacion
+app.UseAuthentication();
 app.UseAuthorization();
 
-// ============================================
-//        REDIRECCIÓN RAÍZ
-// ============================================
+// Redireccion raiz
 app.MapGet("/", context =>
 {
     context.Response.Redirect("/Cuenta/Login");
     return Task.CompletedTask;
 });
 
-// ============================================
-//        RUTEO
-// ============================================
+// Rutas
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Cuenta}/{action=Login}/{id?}");
 
 app.Run();
+        

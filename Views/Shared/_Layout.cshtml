@@ -9,11 +9,15 @@
     <title>Parchís - @ViewData["Title"]</title>
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
+@RenderSection("Scripts", required: false)
 <body>
     <div class="container">
         @RenderBody()
     </div>
 
     <script src="~/js/turn.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
 </body>
 </html>
