@@ -31,6 +31,7 @@ builder.Services.AddSingleton<TurnManager>();
 builder.Services.AddHostedService<GameOrchestratorHostedService>();
 builder.Services.AddScoped<UsuarioRegistradoEventHandler>();
 builder.Services.AddScoped<CuentaService>();
+builder.Services.AddSingleton<SocketGameService>();
 
 var app = builder.Build();
 

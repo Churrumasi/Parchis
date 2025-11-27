@@ -15,8 +15,14 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             _bus = bus;
         }
 
-        public IActionResult EsTuTurno()
+        public async Task<IActionResult> EsTuTurno(
+    [FromServices] SocketGameService socket)
         {
+            if (!socket.Conectado)
+            {
+                await socket.ConectarAsync("127.0.0.1", 9000);
+            }
+
             var jugador = _turnManager.GetJugadorActual();
             return View(model: jugador);
         }
@@ -30,6 +36,7 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         public IActionResult Inactividad()
         {
             var jugador = _turnManager.GetJugadorActual();
+
             return View(model: jugador);
         }
 
@@ -47,24 +54,45 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         }
 
         [HttpPost]
-        public IActionResult LanzarDadoAjax()
+        public async Task<IActionResult> LanzarDadoAjax(
+    [FromServices] SocketGameService socket)
         {
             var jugador = _turnManager.GetJugadorActual();
             if (jugador == null) return BadRequest("No hay jugador actual.");
-            var rnd = new Random();
-            var valor = rnd.Next(1, 7);
-            _turnManager.ProcesarDadoLanzado(jugador.IdJugador, valor);
-            return Json(new { valor });
+
+            await socket.EnviarAsync(new
+            {
+                type = "roll",
+                player = jugador.IdJugador
+            });
+
+            var respuesta = await socket.RecibirAsync();
+
+            return Json(new { server = respuesta });
         }
 
         [HttpPost]
-        public IActionResult MoverFichaAjax(int indiceFicha, int desde, int hasta)
+        public async Task<IActionResult> MoverFichaAjax(
+    int indiceFicha, int desde, int hasta,
+    [FromServices] SocketGameService socket)
         {
             var jugador = _turnManager.GetJugadorActual();
             if (jugador == null) return BadRequest();
-            _turnManager.ProcesarMovimiento(jugador.IdJugador, indiceFicha, desde, hasta);
-            return Json(new { ok = true });
+
+            await socket.EnviarAsync(new
+            {
+                type = "move",
+                player = jugador.IdJugador,
+                piece = indiceFicha,
+                from = desde,
+                to = hasta
+            });
+
+            var respuesta = await socket.RecibirAsync();
+
+            return Json(new { server = respuesta });
         }
+
 
         [HttpPost]
         public IActionResult PasarTurnoAjax()

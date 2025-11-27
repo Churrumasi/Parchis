@@ -1,23 +1,51 @@
-@*
-  _Layout.cshtml - layout mejorado que carga estilos y scripts
-*@
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Parchís - @ViewData["Title"]</title>
+
+    <!-- CSS GLOBAL -->
     <link rel="stylesheet" href="~/css/site.css" />
+
+    <style>
+        /* Asegura que toda vista pueda usar toda la pantalla real */
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Elimina límites de tamaño que rompían el diseño */
+        .full-wrapper {
+            min-height: 100vh;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+
+    @RenderSection("Head", required: false)
 </head>
-@RenderSection("Scripts", required: false)
+
 <body>
-    <div class="container">
+
+    <!-- Contenedor sin límite de ancho -->
+    <div class="full-wrapper">
         @RenderBody()
     </div>
 
-    <script src="~/js/turn.js"></script>
+    <!-- JS Libraries -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
-<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+    <!-- JS del proyecto -->
+    <script src="~/js/turn.js"></script>
+
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

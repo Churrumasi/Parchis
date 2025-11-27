@@ -1,8 +1,82 @@
-@model caso_de_uso_6_ejercer_turno.Models.Domain.Player
+﻿@@model caso_de_uso_6_ejercer_turno.Models.Domain.Player
 @{
     ViewData["Title"] = "Fin del turno";
     Layout = "/Views/Shared/_Layout.cshtml";
 }
-<div class="big">Turno del siguiente jugador</div>
-<p>Has finalizado tu turno.</p>
-<p><a class="btn" href="/Turn/EsTuTurno">Continuar</a></p>
+
+<style>
+    .success-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .success-card {
+        background: white;
+        border-radius: 24px;
+        padding: 40px;
+        max-width: 500px;
+        text-align: center;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .success-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        font-size: 40px;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    }
+
+    .success-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 12px;
+    }
+
+    .success-text {
+        color: #64748b;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+</style>
+
+<div class="success-page">
+    <div class="success-card">
+        <div class="success-icon">✓</div>
+        <div class="success-title">Turno del siguiente jugador</div>
+        <p class="success-text">Has finalizado tu turno correctamente.</p>
+        <a class="btn" href="/Turn/EsTuTurno" style="max-width: 250px; margin: 0 auto;">
+            🎮 Continuar
+        </a>
+        <div class="color-dots">
+            <div class="color-dot" style="background: #ef4444;"></div>
+            <div class="color-dot" style="background: #fbbf24;"></div>
+            <div class="color-dot" style="background: #10b981;"></div>
+            <div class="color-dot" style="background: #3b82f6;"></div>
+        </div>
+    </div>
+</div>
