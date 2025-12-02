@@ -7,11 +7,13 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
     public class CuentaController : Controller
     {
         private readonly CuentaService _cuentaService;
-
-        public CuentaController(CuentaService cuentaService)
+        private readonly TurnManager _turnManager;
+        public CuentaController(CuentaService cuentaService, TurnManager turnManager)
         {
             _cuentaService = cuentaService;
+            _turnManager = turnManager;
         }
+
 
         // ============================
         // GET: Cuenta/Login
@@ -24,21 +26,65 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         // ============================
         // POST: Cuenta/Login
         // ============================
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Login(LoginViewModel model)
-{
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(
+            LoginViewModel model,
+            [FromServices] SocketGameService socketService)
+        {
+            string username = string.IsNullOrWhiteSpace(model.Username)
+                ? "UsuarioPrueba"
+                : model.Username;
 
-    var usuario = new
-    {
-        NombreUsuario = model.Username == null || model.Username == "" 
-                        ? "UsuarioPrueba" 
-                        : model.Username
-    };
+            // 1. Conectar al servidor
+            bool conectado = await socketService.ConectarAsync("127.0.0.1", 9000);
 
-    TempData["SuccessMessage"] = "Bienvenido " + usuario.NombreUsuario + "!";
-    return RedirectToAction("EsTuTurno", "Turn");
-}
+            if (!conectado)
+            {
+                TempData["ErrorMessage"] = "No se pudo conectar al servidor de Parchís.";
+                return View(model);
+            }
+
+            // 2. Enviar usuario al servidor
+            await socketService.EnviarAsync(new
+            {
+                type = "register",
+                username = username
+            });
+
+            // 3. Recibir asignación
+            string respuesta = await socketService.RecibirAsync();
+
+            var asignacion = Newtonsoft.Json.JsonConvert.DeserializeObject<PlayerAssignResponse>(respuesta);
+
+            if (asignacion == null)
+            {
+                TempData["ErrorMessage"] = "Error al recibir la respuesta del servidor.";
+                return View(model);
+            }
+
+            // 4. Guardar en sesión
+            HttpContext.Session.SetString("Username", username);
+            HttpContext.Session.SetInt32("PlayerNumber", asignacion.player);
+            HttpContext.Session.SetString("PlayerColor", asignacion.color);
+
+            // 5. SINCRONIZAR con el TurnManager local
+            // Asignamos el playerNumber y color al jugador local que corresponda
+            _turnManager.AsignarPlayerNumberALocal(username, asignacion.player, asignacion.color);
+
+            TempData["SuccessMessage"] = $"Bienvenido {username}! Eres el jugador {asignacion.player} ({asignacion.color}).";
+
+            return RedirectToAction("EsTuTurno", "Turn");
+        }
+
+        public class PlayerAssignResponse
+        {
+            public string type { get; set; }
+            public int player { get; set; }
+            public string color { get; set; }
+        }
+
+
         // ============================
         // GET: Cuenta/Registrar
         // ============================

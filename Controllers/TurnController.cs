@@ -60,10 +60,18 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             var jugador = _turnManager.GetJugadorActual();
             if (jugador == null) return BadRequest("No hay jugador actual.");
 
+            // si IdJugador es string que contiene número, lo convertimos a int o enviamos tal cual
+            int playerNumber;
+            if (!int.TryParse(jugador.IdJugador, out playerNumber))
+            {
+                // fallback: si no se puede parsear, intenta recuperar desde session
+                playerNumber = HttpContext.Session.GetInt32("PlayerNumber") ?? 0;
+            }
+
             await socket.EnviarAsync(new
             {
                 type = "roll",
-                player = jugador.IdJugador
+                player = playerNumber
             });
 
             var respuesta = await socket.RecibirAsync();
@@ -79,10 +87,16 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             var jugador = _turnManager.GetJugadorActual();
             if (jugador == null) return BadRequest();
 
+            int playerNumber;
+            if (!int.TryParse(jugador.IdJugador, out playerNumber))
+            {
+                playerNumber = HttpContext.Session.GetInt32("PlayerNumber") ?? 0;
+            }
+
             await socket.EnviarAsync(new
             {
                 type = "move",
-                player = jugador.IdJugador,
+                player = playerNumber,
                 piece = indiceFicha,
                 from = desde,
                 to = hasta

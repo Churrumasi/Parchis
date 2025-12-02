@@ -33,6 +33,8 @@ builder.Services.AddScoped<UsuarioRegistradoEventHandler>();
 builder.Services.AddScoped<CuentaService>();
 builder.Services.AddSingleton<SocketGameService>();
 
+builder.Services.AddSingleton<TurnManager>();
+
 var app = builder.Build();
 
 // Middleware

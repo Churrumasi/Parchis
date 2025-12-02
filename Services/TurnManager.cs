@@ -11,29 +11,53 @@ namespace caso_de_uso_6_ejercer_turno.Services
 
         public TurnManager(IEventBus bus)
         {
-            _bus = bus;
-            // Inicializar con fichas en posiciones visibles para testing
-            _game.Jugadores.Add(new Player { 
-                Nombre = "Ana", 
-                ColorFichas = "rojo",
-                PosicionesFichas = new List<int> { 38, 39, 40, -1 }
-            });
-            _game.Jugadores.Add(new Player { 
-                Nombre = "Luis", 
-                ColorFichas = "azul",
-                PosicionesFichas = new List<int> { 12, 13, 14, -1 }
-            });
-            _game.Jugadores.Add(new Player { 
-                Nombre = "María", 
-                ColorFichas = "amarillo",
-                PosicionesFichas = new List<int> { 4, 5, 6, -1 }
-            });
-            _game.Jugadores.Add(new Player { 
-                Nombre = "José", 
-                ColorFichas = "verde",
-                PosicionesFichas = new List<int> { 55, 56, 57, -1 }
-            });
+            _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         }
+
+        public void AsignarPlayerNumberALocal(string username, int playerNumber, string color)
+        {
+            if (_game.Jugadores == null || _game.Jugadores.Count == 0) return;
+
+            // Normalizamos el nombre recibido
+            string usuarioNorm = (username ?? "").Trim().ToUpperInvariant();
+
+            // Intentar buscar jugador por nombre (sin acentos / case-insensitive)
+            var jugador = _game.Jugadores
+                .FirstOrDefault(j => !string.IsNullOrWhiteSpace(j.Nombre) &&
+                                     j.Nombre.Trim().ToUpperInvariant().Contains(usuarioNorm));
+
+            if (jugador != null)
+            {
+                // Si existe, asignamos IdJugador y color
+                jugador.IdJugador = playerNumber.ToString();
+                jugador.ColorFichas = color ?? jugador.ColorFichas;
+                return;
+            }
+
+            // Si no encontramos por nombre, intentamos asignar por índice playerNumber-1
+            int idx = playerNumber - 1;
+            if (idx >= 0 && idx < _game.Jugadores.Count)
+            {
+                var j = _game.Jugadores[idx];
+                j.IdJugador = playerNumber.ToString();
+                j.ColorFichas = color ?? j.ColorFichas;
+                // opcional: poner su nombre al username recibido
+                j.Nombre = string.IsNullOrWhiteSpace(username) ? j.Nombre : username;
+                return;
+            }
+
+            // Si no cabe, como fallback creamos/añadimos un nuevo jugador
+            var nuevo = new Player
+            {
+                IdJugador = playerNumber.ToString(),
+                Nombre = username ?? $"Jugador{playerNumber}",
+                ColorFichas = color ?? "sin_color",
+                PosicionesFichas = new List<int> { -1, -1, -1, -1 }
+            };
+
+            _game.Jugadores.Add(nuevo);
+        }
+
 
         public GameState GetGameState() => _game;
 
