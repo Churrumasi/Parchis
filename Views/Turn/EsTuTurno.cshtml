@@ -187,9 +187,14 @@
     }
 
     .board-image {
-        width: 100%;
+        /* Constrain the board to always be a square inside the frame.
+           Use min() so it scales with container and the viewport height. */
+        width: min(600px, 100%);
         max-width: 600px;
-        aspect-ratio: 1;
+        /* limit height so the board never exceeds viewport available space */
+        max-height: min(600px, calc(100vh - 220px));
+        aspect-ratio: 1 / 1; /* enforce square */
+        height: auto; /* allow aspect-ratio to define height */
         background: #ffffff;
         border-radius: 12px;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -197,34 +202,36 @@
         display: grid;
         grid-template-columns: repeat(15, 1fr);
         grid-template-rows: repeat(15, 1fr);
-        grid-auto-rows: 1fr; /* ensure all rows have equal height */
         gap: 0;
-        padding: 8px;
+        padding: 0;
         border: 8px solid #8b5cf6;
+        margin: 0 auto;
     }
 
     .cell {
         background: #ffffff;
         border: 1px solid #94a3b8;
         position: relative;
-        /* removed aspect-ratio to avoid subpixel rounding gaps in the grid */
+        /* keep width/height to avoid subpixel gaps */
         width: 100%;
-        height: 100%;
+        height: 100%; /* fill the grid cell (rows are equal) */
         box-sizing: border-box;
     }
 
     /* Zonas de casa con colores vibrantes */
     .cell.red { 
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border-color: #047857;
+        /* red home */
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        border-color: #b91c1c;
     }
     .cell.yellow { 
         background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
         border-color: #d97706;
     }
     .cell.green { 
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        border-color: #b91c1c;
+        /* green home */
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-color: #047857;
     }
     .cell.blue { 
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -253,7 +260,8 @@
     }
 
     .cell.center-red { 
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        /* center triangle for red home */
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         border: none;
     }
     .cell.center-yellow { 
@@ -261,7 +269,8 @@
         border: none;
     }
     .cell.center-green { 
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        /* center triangle for green home */
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         border: none;
     }
     .cell.center-blue { 
@@ -271,16 +280,18 @@
 
     /* Casillas del pasillo con color de fondo */
     .cell.path-red { 
-        background: #d1fae5;
-        border-color: #10b981;
+        /* red path towards center */
+        background: #fecaca;
+        border-color: #ef4444;
     }
     .cell.path-yellow { 
         background: #fef3c7;
         border-color: #fbbf24;
     }
     .cell.path-green { 
-        background: #fecaca;
-        border-color: #ef4444;
+        /* green path towards center */
+        background: #d1fae5;
+        border-color: #10b981;
     }
     .cell.path-blue { 
         background: #dbeafe;
@@ -289,7 +300,9 @@
 
     /* Casillas seguras con estrella */
     .cell.safe {
-        background: #fef3c7 !important;
+        /* neutral background so the star contrasts on any nearby color */
+        background: #e5e7eb !important; /* gray-200 */
+        border-color: #cbd5e1;
     }
     
     .cell.safe::before {
@@ -299,8 +312,8 @@
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 18px;
-        color: #f59e0b;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        color: #374151; /* gray-700 - contrasting star color */
+        text-shadow: 0 1px 2px rgba(0,0,0,0.12);
     }
 
     /* Casillas de salida con flecha */
@@ -315,20 +328,45 @@
     }
 
     .cell.exit-red::after { 
-        color: #10b981;
+        /* point down */
+        transform: translate(-50%, -50%) rotate(180deg);
+        color: #ef4444;
         text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .cell.exit-yellow::after { 
+        /* point left */
+        transform: translate(-50%, -50%) rotate(-90deg);
         color: #fbbf24;
         text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .cell.exit-green::after { 
-        color: #ef4444;
+        /* point up (default) */
+        color: #10b981;
         text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .cell.exit-blue::after { 
+        /* point right */
+        transform: translate(-50%, -50%) rotate(90deg);
         color: #3b82f6;
         text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Directional exit arrows */
+    .cell.exit-up::after {
+        /* default arrow pointing up */
+        color: #374151;
+    }
+    .cell.exit-down::after {
+        transform: translate(-50%, -50%) rotate(180deg);
+        color: #374151;
+    }
+    .cell.exit-right::after {
+        transform: translate(-50%, -50%) rotate(90deg);
+        color: #374151;
+    }
+    .cell.exit-left::after {
+        transform: translate(-50%, -50%) rotate(-90deg);
+        color: #374151;
     }
 
     /* Numeración de casillas */
@@ -591,7 +629,7 @@
                     <div id="dice-result" class="dice-result">Haz clic en el dado para lanzar</div>
                 </div>
                 <div class="controls-box" id="selection-area">
-                    <div style="font-weight:700, margin-bottom: 12px, color: #1e293b;">
+                    <div style="font-weight:700; margin-bottom: 12px; color: #1e293b;">
                         🎯 Selecciona ficha para mover
                     </div>
                     <div class="selection-list" id="selection-list">
@@ -600,8 +638,8 @@
                         <button type="button" class="btn" data-action="move" data-index="2">Ficha 3</button>
                         <button type="button" class="btn" data-action="move" data-index="3">Ficha 4</button>
                     </div>
-                    <div style="margin-top:12px, text-align:center">
-                        <small style="color:#94a3b8, font-size: 12px;">
+                    <div style="margin-top:12px; text-align:center">
+                        <small style="color:#94a3b8; font-size: 12px;">
                             ℹ️ Mapeo deshabilitado
                         </small>
                     </div>
@@ -641,35 +679,58 @@
                 cell.className = 'cell';
                 cell.dataset.row = row;
                 cell.dataset.col = col;
-                
+
+                // Explicit directional exits requested by user
+                if (row === 0 && col === 7) { // (0,7) arrow down
+                    cell.classList.add('exit', 'exit-down');
+                    board.appendChild(cell);
+                    continue;
+                }
+                if (row === 7 && col === 0) { // (7,0) arrow right
+                    cell.classList.add('exit', 'exit-right');
+                    board.appendChild(cell);
+                    continue;
+                }
+                if (row === 14 && col === 7) { // (14,7) arrow up
+                    cell.classList.add('exit', 'exit-up');
+                    board.appendChild(cell);
+                    continue;
+                }
+                if (row === 7 && col === 14) { // (7,14) arrow left
+                    cell.classList.add('exit', 'exit-left');
+                    board.appendChild(cell);
+                    continue;
+                }
+
+                // Place exactly four star (safe) cells — one per color
+                if ((row === 2 && col === 8) ||
+                    (row === 6 && col === 2) ||
+                    (row === 12 && col === 6) ||
+                    (row === 8 && col === 12)) {
+                     cell.classList.add('safe');
+                     board.appendChild(cell);
+                     continue;
+                }
+
                 // CASA VERDE (arriba-izquierda, 0-5, 0-5)
                 if (row >= 0 && row <= 5 && col >= 0 && col <= 5) {
                     cell.classList.add('red');
-                    // Círculos para fichas
-                    if ((row === 1 || row === 4) && (col === 1 || col === 4)) {
-                        cell.classList.add('home-circle');
-                    }
+                    // removed home-circle markers
                 }
                 // CASA AMARILLA (arriba-derecha, 0-5, 9-14)
                 else if (row >= 0 && row <= 5 && col >= 9 && col <= 14) {
                     cell.classList.add('yellow');
-                    if ((row === 1 || row === 4) && (col === 10 || col === 13)) {
-                        cell.classList.add('home-circle');
-                    }
+                    // removed home-circle markers
                 }
                 // CASA AZUL (abajo-izquierda, 9-14, 0-5)
                 else if (row >= 9 && row <= 14 && col >= 0 && col <= 5) {
                     cell.classList.add('blue');
-                    if ((row === 10 || row === 13) && (col === 1 || col === 4)) {
-                        cell.classList.add('home-circle');
-                    }
+                    // removed home-circle markers
                 }
                 // CASA ROJA (abajo-derecha, 9-14, 9-14)
                 else if (row >= 9 && row <= 14 && col >= 9 && col <= 14) {
                     cell.classList.add('green');
-                    if ((row === 10 || row === 13) && (col === 10 || col === 13)) {
-                        cell.classList.add('home-circle');
-                    }
+                    // removed home-circle markers
                 }
                 // CENTRO - Triángulos de meta (forma de cruz)
                 else if (row >= 6 && row <= 8 && col >= 6 && col <= 8) {
@@ -696,74 +757,55 @@
                 }
                 // PASILLO VERTICAL IZQUIERDO (col 6)
                 else if (col === 6) {
-                    if (row === 0) {
-                        cell.classList.add('safe');
-                    } else if (row >= 1 && row <= 5) {
-                        if (row === 5) {
+                    // removed row===0 and row===14 safe assignments — handled above
+                    if (row >= 1 && row <= 5) {
+                        if (row === 1) { // moved exit 4 cells up (was row === 5)
                             cell.classList.add('exit');
                             cell.classList.add('exit-red');
+                            cell.classList.add('path-red');
                         }
                     } else if (row >= 9 && row <= 13) {
-                        if (row === 9) {
-                            cell.classList.add('exit');
-                            cell.classList.add('exit-green');
-                        }
-                    } else if (row === 14) {
-                        cell.classList.add('safe');
+                        // Sin color en esta sección
                     }
                 }
                 // PASILLO VERTICAL DERECHO (col 8)
                 else if (col === 8) {
-                    if (row === 0) {
-                        cell.classList.add('safe');
-                    } else if (row >= 1 && row <= 5) {
-                        if (row === 1) {
-                            cell.classList.add('exit');
-                            cell.classList.add('exit-yellow');
-                        }
+                    // removed row===0 and row===14 safe assignments — handled above
+                    if (row >= 1 && row <= 5) {
+                        // removed vertical yellow exit at (1,8) per correction
                     } else if (row >= 9 && row <= 13) {
-                        if (row === 13) {
+                        if (row === 13) { // moved green exit 4 down (was row === 9)
                             cell.classList.add('exit');
-                            cell.classList.add('exit-blue');
+                            cell.classList.add('exit-green');
+                            cell.classList.add('path-green');
                         }
-                    } else if (row === 14) {
-                        cell.classList.add('safe');
                     }
                 }
                 // PASILLO HORIZONTAL SUPERIOR (row 6)
                 else if (row === 6) {
                     if (col === 0) {
-                        cell.classList.add('safe');
+                        // removed safe assignment here
                     } else if (col >= 1 && col <= 5) {
-                        if (col === 1) {
-                            cell.classList.add('exit');
-                            cell.classList.add('exit-red');
-                        }
+                        // Sin color en esta sección
                     } else if (col >= 9 && col <= 13) {
                         if (col === 13) {
+                            // restore yellow exit at (6,13)
                             cell.classList.add('exit');
                             cell.classList.add('exit-yellow');
+                            cell.classList.add('path-yellow');
                         }
-                    } else if (col === 14) {
-                        cell.classList.add('safe');
                     }
                 }
                 // PASILLO HORIZONTAL INFERIOR (row 8)
                 else if (row === 8) {
-                    if (col === 0) {
-                        cell.classList.add('safe');
-                    } else if (col >= 1 && col <= 5) {
-                        if (col === 5) {
-                            cell.classList.add('exit');
-                            cell.classList.add('exit-green');
-                        }
-                    } else if (col >= 9 && col <= 13) {
-                        if (col === 9) {
+                    if (col >= 1 && col <= 5) {
+                        if (col === 1) {
                             cell.classList.add('exit');
                             cell.classList.add('exit-blue');
+                            cell.classList.add('path-blue');
                         }
-                    } else if (col === 14) {
-                        cell.classList.add('safe');
+                    } else if (col >= 9 && col <= 13) {
+                        // removed safe/exit here
                     }
                 }
                 // PASILLO DE META VERDE (hacia arriba)
@@ -811,4 +853,4 @@
 
     // Inicializar el tablero
     generateBoard();
-</script>
+</script></script>

@@ -4,6 +4,8 @@ VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "caso_de_uso_6_ejercer_turno", "caso_de_uso_6_ejercer_turno.csproj", "{FCE57747-1406-4136-BDA6-D43CFEF0AB0A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServidorParchis", "..\ServidorParchis\ServidorParchis.csproj", "{6673F425-FE1A-417A-BA21-F09734ED426B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{FCE57747-1406-4136-BDA6-D43CFEF0AB0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCE57747-1406-4136-BDA6-D43CFEF0AB0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCE57747-1406-4136-BDA6-D43CFEF0AB0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6673F425-FE1A-417A-BA21-F09734ED426B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6673F425-FE1A-417A-BA21-F09734ED426B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6673F425-FE1A-417A-BA21-F09734ED426B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6673F425-FE1A-417A-BA21-F09734ED426B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
