@@ -1,0 +1,204 @@
+﻿@{
+    ViewData["Title"] = "Sala de Espera - Parchís Online";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-white mb-2">Sala de Espera</h1>
+                <p class="text-white/70">Aquí se reúne la partida antes de entrar al tablero</p>
+            </div>
+
+            <div class="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m0-6a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <span class="text-white font-semibold" id="players-count">Jugadores: 2/4</span>
+                    </div>
+                    <div id="status-pill" class="px-4 py-2 rounded-full bg-red-500/20 text-red-300">Se requieren 2-4 jugadores</div>
+                </div>
+
+                <div id="players-list" class="space-y-3">
+                    <!-- players will be rendered here -->
+                </div>
+            </div>
+
+            <div class="flex gap-4 mb-4">
+                <button id="btn-start" class="flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg" disabled>
+                    Iniciar Partida
+                </button>
+                <button id="btn-add" class="px-6 py-4 rounded-xl font-bold bg-blue-500 hover:bg-blue-600 text-white">+ Jugador</button>
+            </div>
+
+            <div id="message" class="text-center text-sm text-white/70"></div>
+
+            <div class="mt-6 text-center text-white/50 text-sm">
+                <p>Sala de demostración • ID: #DEMO-LOBBY</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            const maxPlayers = 4;
+            const minPlayers = 2;
+            let players = [
+                { id: 1, name: 'Ana', color: 'rojo', isHost: true },
+                { id: 2, name: 'Luis', color: 'azul', isHost: false }
+            ];
+
+            const ALL_COLORS = ['rojo','azul','amarillo','verde'];
+
+            const playersList = document.getElementById('players-list');
+            const playersCountEl = document.getElementById('players-count');
+            const statusPill = document.getElementById('status-pill');
+            const btnStart = document.getElementById('btn-start');
+            const btnAdd = document.getElementById('btn-add');
+            const msg = document.getElementById('message');
+
+            function reindexPlayers() {
+                // Ensure host is always at index 0 (player 1)
+                const host = players.find(p => p.isHost);
+                const others = players.filter(p => !p.isHost);
+                const ordered = host ? [host, ...others] : [...others];
+                players = ordered.map((p, idx) => {
+                    const newId = idx + 1;
+                    let name = p.name;
+                    if (p.name && p.name.startsWith('Jugador ')) {
+                        name = 'Jugador ' + newId;
+                    }
+                    return { ...p, id: newId, name };
+                });
+            }
+
+             function getAvailableColors() {
+                 const used = players.map(p => p.color);
+                 return ALL_COLORS.filter(c => !used.includes(c));
+             }
+
+            function colorToBg(color) {
+                switch(color) {
+                    case 'azul': return 'from-blue-500 to-indigo-500';
+                    case 'amarillo': return 'from-yellow-400 to-amber-400';
+                    case 'verde': return 'from-green-400 to-emerald-500';
+                    case 'rojo':
+                    default: return 'from-red-500 to-pink-500';
+                }
+            }
+
+            function render() {
+                playersList.innerHTML = '';
+                players.forEach(p => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-white/5 rounded-xl p-4 flex items-center justify-between hover:bg-white/10 transition-colors';
+                    el.innerHTML = `
+                        <div class="flex items-center gap-3"> 
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br ${colorToBg(p.color)}">${p.id}</div>
+                            <div>
+                                <div class="text-white font-medium">${p.name}</div>
+                                <div class="text-sm text-white/60">${p.color} ${p.isHost ? '• Anfitrión' : ''}</div>
+                            </div>
+                        </div>
+                        <div>
+                            ${p.isHost ? '<span class="text-yellow-300 text-sm font-semibold">Anfitrión</span>' : `<button data-id="${p.id}" class="text-red-400 hover:text-red-300 text-sm font-medium ml-4 remove-btn">Expulsar</button>`}
+                        </div>
+                     `;
+                     playersList.appendChild(el);
+                 });
+
+                const emptySlots = maxPlayers - players.length;
+                for (let i = 0; i < emptySlots; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'bg-white/5 rounded-xl p-4 flex items-center gap-3 border-2 border-dashed border-white/20';
+                    el.innerHTML = '<div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center"></div><span class="text-white/40 font-medium">Esperando jugador...</span>';
+                    playersList.appendChild(el);
+                }
+
+                playersCountEl.innerText = `Jugadores: ${players.length}/${maxPlayers}`;
+                const canStart = players.length >= minPlayers && players.length <= maxPlayers;
+                btnStart.disabled = !canStart;
+                statusPill.className = canStart ? 'px-4 py-2 rounded-full bg-green-500/20 text-green-300' : 'px-4 py-2 rounded-full bg-red-500/20 text-red-300';
+                statusPill.innerText = canStart ? '✓ Listo para iniciar' : `Se requieren ${minPlayers}-${maxPlayers} jugadores`;
+
+                // attach remove handlers
+                const removes = document.querySelectorAll('.remove-btn');
+                removes.forEach(r => r.addEventListener('click', e => {
+                    const id = parseInt(e.target.getAttribute('data-id'));
+                    removePlayer(id);
+                }));
+            }
+
+            function addPlayer() {
+                if (players.length >= maxPlayers) {
+                    showMessage('Sala llena. Máximo ' + maxPlayers + ' jugadores', true);
+                    return;
+                }
+                const available = getAvailableColors();
+                if (available.length === 0) {
+                    showMessage('No hay colores disponibles para nuevos jugadores', true);
+                    return;
+                }
+                const color = available[Math.floor(Math.random() * available.length)];
+                const id = players.length ? (Math.max(...players.map(p => p.id)) + 1) : 1;
+                const shouldBeHost = !players.some(p => p.isHost);
+                players.push({ id: id, name: 'Jugador ' + id, color: color, isHost: shouldBeHost });
+                reindexPlayers();
+                render();
+            }
+
+            function removePlayer(id) {
+                const target = players.find(p => p.id === id);
+                if (!target) return;
+                if (target.isHost) {
+                    showMessage('No se puede expulsar al anfitrión', true);
+                    return;
+                }
+                players = players.filter(p => p.id !== id);
+                reindexPlayers();
+                render();
+            }
+
+            function showMessage(text, danger) {
+                msg.innerText = text;
+                msg.className = danger ? 'text-center text-sm text-red-300 mt-4' : 'text-center text-sm text-green-300 mt-4';
+                setTimeout(() => { msg.innerText = ''; msg.className = 'text-center text-sm text-white/70'; }, 3000);
+            }
+
+            btnAdd.addEventListener('click', addPlayer);
+
+            btnStart.addEventListener('click', () => {
+                if (players.length < minPlayers) {
+                    showMessage('No hay suficientes jugadores', true);
+                    return;
+                }
+                // Visual countdown then redirect to board (EsTuTurno)
+                btnStart.disabled = true;
+                let sec = 3;
+                const original = btnStart.innerText;
+                btnStart.innerText = 'Iniciando... ' + sec;
+                const timer = setInterval(() => {
+                    sec--;
+                    if (sec <= 0) {
+                        clearInterval(timer);
+                        // redirect to controller action that shows the board
+                        window.location.href = '/Turn/EsTuTurno';
+                    } else {
+                        btnStart.innerText = 'Iniciando... ' + sec;
+                    }
+                }, 1000);
+            });
+
+            // initial render
+            render();
+        })();
+    </script>
+</body>
+</html>

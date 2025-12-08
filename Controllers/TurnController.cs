@@ -27,6 +27,48 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             return View(model: jugador);
         }
 
+        // Nueva acción para mostrar la sala de espera entre login y tablero
+        public IActionResult SalaEspera()
+        {
+            return View();
+        }
+
+        // ---------------- LOBBY API ----------------
+        [HttpGet]
+        public IActionResult LobbyPlayers()
+        {
+            var players = _turnManager.GetLobbyPlayers().Select(p => new {
+                id = p.IdJugador,
+                name = p.Nombre,
+                color = p.ColorFichas
+            });
+            return Json(players);
+        }
+
+        [HttpPost]
+        public IActionResult LobbyAdd([FromForm] string name, [FromForm] string color)
+        {
+            var p = _turnManager.AddPlayer(name, color);
+            return Json(new { ok = true, id = p.IdJugador });
+        }
+
+        [HttpPost]
+        public IActionResult LobbyRemove([FromForm] string id)
+        {
+            var ok = _turnManager.RemovePlayer(id);
+            return Json(new { ok });
+        }
+
+        [HttpPost]
+        public IActionResult LobbyStart()
+        {
+            if (!_turnManager.CanStart()) return BadRequest(new { error = "No hay suficientes jugadores" });
+
+            var gs = _turnManager.StartGameAndShuffleOrder();
+            return Json(new { ok = true, game = gs });
+        }
+
+
         public IActionResult TirarDado()
         {
             var jugador = _turnManager.GetJugadorActual();

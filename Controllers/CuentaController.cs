@@ -37,7 +37,8 @@ public async Task<IActionResult> Login(LoginViewModel model)
     };
 
     TempData["SuccessMessage"] = "Bienvenido " + usuario.NombreUsuario + "!";
-    return RedirectToAction("EsTuTurno", "Turn");
+    // Redirigir primero a la sala de espera antes de entrar al tablero
+    return RedirectToAction("SalaEspera", "Turn");
 }
         // ============================
         // GET: Cuenta/Registrar
