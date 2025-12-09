@@ -65,6 +65,14 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             return View();
         }
 
+        // Nueva acción para mostrar la pantalla intermedia de selección (crear/unirse)
+        public IActionResult GameLobby()
+        {
+            var username = HttpContext.Session.GetString("username") ?? "Invitado";
+            ViewBag.Username = username;
+            return View();
+        }
+
         // ---------------- LOBBY API ----------------
         [HttpGet]
         public IActionResult LobbyPlayers()

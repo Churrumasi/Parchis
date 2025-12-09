@@ -39,8 +39,8 @@ public async Task<IActionResult> Login(LoginViewModel model)
     TempData["SuccessMessage"] = "Bienvenido " + usuario.NombreUsuario + "!";
     // guardar username en sesión para usarlo en la sala de espera
     HttpContext.Session.SetString("username", usuario.NombreUsuario);
-    // Redirigir primero a la sala de espera antes de entrar al tablero
-    return RedirectToAction("SalaEspera", "Turn");
+    // Redirigir primero a la pantalla de selección (GameLobby) antes de entrar al lobby
+    return RedirectToAction("GameLobby", "Turn");
 }
         // ============================
         // GET: Cuenta/Registrar

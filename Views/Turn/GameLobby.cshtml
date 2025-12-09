@@ -1,0 +1,70 @@
+@{
+    ViewData["Title"] = "Seleccionar Partida - Parchís Online";
+    var username = Context.Session.GetString("username") ?? "Invitado";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
+    <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 w-full max-w-md border border-white/20">
+        <h1 class="text-4xl font-bold text-white text-center mb-2"> Bienvenido </h1>
+        <p class="text-purple-200 text-center mb-8"> Elige una opción para comenzar </p>
+
+        <div class="space-y-4">
+            <button id="btn-create" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center justify-center gap-3">
+                Crear Partida
+            </button>
+
+            <button id="btn-show-join" class="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center justify-center gap-3">
+                Unirse a Partida
+            </button>
+
+            <div id="join-area" style="display:none;" class="mt-4 space-y-3 animate-fadeIn">
+                <input id="input-game-id" type="text" placeholder="Ingresa el ID de la partida" maxlength="10" class="w-full bg-white/20 backdrop-blur text-white placeholder-purple-300 border-2 border-white/30 rounded-xl py-3 px-4 focus:outline-none focus:border-cyan-400 transition-colors" />
+                <button id="btn-join" class="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105">Confirmar</button>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <p class="text-purple-300 text-sm">Crea una partida y comparte el ID con tus amigos</p>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            const username = '@username'.replace(/'/g, "\\'");
+
+            document.getElementById('btn-create').addEventListener('click', async () => {
+                // call server to reserve ownerName and then navigate to SalaEspera (no lobby id -> become host)
+                try {
+                    // make a simple GET to SalaEspera without query to set owner on server via TurnController
+                    const res = await fetch('/Turn/SalaEspera');
+                    // navigate to SalaEspera which will start SignalR join as host
+                    window.location.href = '/Turn/SalaEspera';
+                } catch (e) {
+                    alert('Error al crear la partida');
+                }
+            });
+
+            document.getElementById('btn-show-join').addEventListener('click', () => {
+                const area = document.getElementById('join-area');
+                area.style.display = area.style.display === 'none' ? 'block' : 'none';
+            });
+
+            document.getElementById('btn-join').addEventListener('click', () => {
+                const id = document.getElementById('input-game-id').value.trim();
+                if (!id) { alert('Por favor ingresa un ID de partida válido'); return; }
+
+                // navigate to SalaEspera with lobby query so server treats as joining existing lobby
+                const url = '/Turn/SalaEspera?lobby=' + encodeURIComponent(id);
+                window.location.href = url;
+            });
+        })();
+    </script>
+</body>
+</html>
