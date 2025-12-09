@@ -79,12 +79,13 @@
             </a>
         </div>
 
-        <!-- Formulario de Login -->
         <form asp-action="Login"
               asp-controller="Cuenta"
-              asp-route-returnUrl="@Context.Request.Query["ReturnUrl"]"
+              asp-route-returnUrl="@ViewData["ReturnUrl"]"
               method="post"
               class="space-y-4">
+
+            @Html.AntiForgeryToken()
             
             <!-- Usuario -->
             <div class="relative">

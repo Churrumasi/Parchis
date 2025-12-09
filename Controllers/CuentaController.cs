@@ -50,12 +50,11 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             // Login exitoso
             TempData["SuccessMessage"] = "Bienvenido " + usuario.NombreUsuario + "!";
 
-            // Guardar nombre en sesión
+            // Guardar nombre en sesion
             HttpContext.Session.SetString("username", usuario.NombreUsuario);
 
-            // ======================================================
-            // LÓGICA DE REDIRECCIÓN MÁGICA
-            // ======================================================
+           
+            // Redireccion
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);

@@ -28,9 +28,8 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             return View(model: jugador);
         }
 
-        // ======================================================
-        // LOGICA DE PROTECCIÓN DE SALA
-        // ======================================================
+        // LOGICA DE PROTECCIoN DE SALA
+      
         public IActionResult SalaEspera(string lobby)
         {
             var username = HttpContext.Session.GetString("username");

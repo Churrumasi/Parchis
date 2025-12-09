@@ -1,43 +1,66 @@
-﻿using System.Net.Sockets;
+﻿using System.Net.WebSockets;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json; // Usamos System.Text.Json por defecto
 
 namespace caso_de_uso_6_ejercer_turno.Services
 {
     public class SocketGameService
     {
-        private TcpClient _client;
-        private NetworkStream _stream;
+        private ClientWebSocket _ws;
 
-        public bool Conectado => _client?.Connected ?? false;
-
-        public async Task<bool> ConectarAsync(string host, int port)
+        public SocketGameService()
         {
-            try
+            _ws = new ClientWebSocket();
+        }
+
+        // ✅ SOLUCIÓN ERROR 1: Propiedad 'Conectado' que faltaba
+        public bool Conectado => _ws.State == WebSocketState.Open;
+
+        // ✅ SOLUCIÓN ERROR 2: Método 'ConectarAsync' que acepta IP y Puerto
+        public async Task ConectarAsync(string ip, int port)
+        {
+            // Si el socket murió o se cerró, hay que crear uno nuevo porque no son reutilizables
+            if (_ws.State == WebSocketState.Closed || _ws.State == WebSocketState.Aborted)
             {
-                _client = new TcpClient();
-                await _client.ConnectAsync(host, port);
-                _stream = _client.GetStream();
-                return true;
+                _ws = new ClientWebSocket();
             }
-            catch
+
+            if (_ws.State != WebSocketState.Open)
             {
-                return false;
+                // Construimos la URL usando la IP y Puerto que recibimos
+                var uri = new Uri($"ws://{ip}:{port}/parchis");
+                await _ws.ConnectAsync(uri, CancellationToken.None);
             }
         }
 
-        public async Task EnviarAsync(object mensaje)
+        public async Task EnviarAsync(object data)
         {
-            var json = JsonConvert.SerializeObject(mensaje);
-            var bytes = Encoding.UTF8.GetBytes(json + "\n");
-            await _stream.WriteAsync(bytes, 0, bytes.Length);
+            if (!Conectado) return;
+
+            string json = JsonSerializer.Serialize(data);
+            var bytes = Encoding.UTF8.GetBytes(json);
+
+            await _ws.SendAsync(
+                new ArraySegment<byte>(bytes),
+                WebSocketMessageType.Text,
+                true,
+                CancellationToken.None);
         }
 
         public async Task<string> RecibirAsync()
         {
-            byte[] buffer = new byte[4096];
-            int read = await _stream.ReadAsync(buffer, 0, buffer.Length);
-            return Encoding.UTF8.GetString(buffer, 0, read);
+            if (!Conectado) return null;
+
+            var buffer = new byte[4096];
+            var result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Cierre servidor", CancellationToken.None);
+                return null;
+            }
+
+            return Encoding.UTF8.GetString(buffer, 0, result.Count);
         }
     }
 }
