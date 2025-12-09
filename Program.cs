@@ -28,6 +28,8 @@ builder.Services.AddSingleton<
 // Servicios personalizados
 builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
 builder.Services.AddSingleton<TurnManager>();
+// LobbyService allows multiple independent lobbies
+builder.Services.AddSingleton<LobbyService>();
 builder.Services.AddHostedService<GameOrchestratorHostedService>();
 builder.Services.AddScoped<UsuarioRegistradoEventHandler>();
 builder.Services.AddScoped<CuentaService>();

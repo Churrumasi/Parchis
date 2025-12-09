@@ -8,11 +8,13 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
     {
         private readonly TurnManager _turnManager;
         private readonly IEventBus _bus;
+        private readonly LobbyService _lobbyService;
 
-        public TurnController(TurnManager turnManager, IEventBus bus)
+        public TurnController(TurnManager turnManager, IEventBus bus, LobbyService lobbyService)
         {
             _turnManager = turnManager;
             _bus = bus;
+            _lobbyService = lobbyService;
         }
 
         public async Task<IActionResult> EsTuTurno(
@@ -30,39 +32,41 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         // Nueva acción para mostrar la sala de espera entre login y tablero
         public IActionResult SalaEspera(string lobby)
         {
-            // Documentación:
-            // - Si el usuario llega sin el query string 'lobby' (flujo normal tras login),
-            //   interpretamos que está creando una nueva sala y reservamos su username
-            //   como propietario (host). Esto garantiza que cuando invoque "Join",
-            //   el servidor marque a ese usuario como anfitrión.
-            // - Si el usuario llega con '?lobby=...' intentamos validar que el id
-            //   coincide con el id de sala actual en el servidor. En este demo el
-            //   servidor mantiene un único lobby en memoria; para múltiples lobbies
-            //   sería necesario un gestor de lobbies por id.
+            var username = HttpContext.Session.GetString("username");
 
-            var username = HttpContext.Session.GetString("username") ?? "Invitado";
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                ViewBag.Error = "Sala no encontrada";
+                ViewBag.LobbyId = null;
+                ViewBag.Username = null;
+                return View();
+            }
 
             if (string.IsNullOrEmpty(lobby))
             {
-                // Sin parámetro: usuario está creando/abriendo la sala -> marcar como owner
-                _turnManager.SetOwnerName(username);
+                // Crear un nuevo lobby y redirigir al mismo con el id generado
+                var id = _lobbyService.CreateLobby(username);
+                return RedirectToAction("SalaEspera", new { lobby = id });
             }
             else
             {
-                // Con parámetro 'lobby': comprobamos si coincide con el id asignado por el servidor
-                var current = _turnManager.GetLobbyId();
-                if (!string.IsNullOrEmpty(lobby) && lobby != current)
+                // Validar existencia del lobby solicitado
+                if (!_lobbyService.TryGetLobby(lobby, out var state))
                 {
-                    // En este ejemplo devolvemos la vista pero el cliente será notificado
-                    // de que el id no coincide. En una implementación real deberíamos
-                    // buscar el lobby por id dentro de un gestor y devolver error 404/403 si no existe.
-                    ViewBag.LobbyMismatch = true;
+                    TempData["ErrorMessage"] = "El identificador de sala no coincide o la sala no existe. Permaneces en la pantalla de selección.";
+                    return RedirectToAction("GameLobby");
                 }
-            }
 
-            ViewBag.LobbyId = _turnManager.GetLobbyId();
-            ViewBag.Username = username;
-            return View();
+                // If lobby exists, set owner name if owner is not set and this user created it earlier
+                if (state.OwnerName == null && state.Jugadores.Count == 0)
+                {
+                    state.OwnerName = username;
+                }
+
+                ViewBag.LobbyId = state.IdPartida;
+                ViewBag.Username = username;
+                return View();
+            }
         }
 
         // Nueva acción para mostrar la pantalla intermedia de selección (crear/unirse)
@@ -75,9 +79,10 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
 
         // ---------------- LOBBY API ----------------
         [HttpGet]
-        public IActionResult LobbyPlayers()
+        public IActionResult LobbyPlayers(string lobby)
         {
-            var players = _turnManager.GetLobbyPlayers().Select(p => new {
+            if (string.IsNullOrEmpty(lobby)) return BadRequest();
+            var players = _lobbyService.GetLobbyPlayers(lobby).Select(p => new {
                 id = p.IdJugador,
                 name = p.Nombre,
                 color = p.ColorFichas
@@ -86,28 +91,31 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         }
 
         [HttpPost]
-        public IActionResult LobbyAdd([FromForm] string name, [FromForm] string color)
+        public IActionResult LobbyAdd([FromForm] string lobby, [FromForm] string name, [FromForm] string color)
         {
-            var p = _turnManager.AddPlayer(name, color);
+            if (string.IsNullOrEmpty(lobby)) return BadRequest();
+            var p = _lobbyService.AddPlayer(lobby, name, color);
+            if (p == null) return BadRequest(new { ok = false });
             return Json(new { ok = true, id = p.IdJugador });
         }
 
         [HttpPost]
-        public IActionResult LobbyRemove([FromForm] string id)
+        public IActionResult LobbyRemove([FromForm] string lobby, [FromForm] string id)
         {
-            var ok = _turnManager.RemovePlayer(id);
+            if (string.IsNullOrEmpty(lobby)) return BadRequest();
+            var ok = _lobbyService.RemovePlayer(lobby, id);
             return Json(new { ok });
         }
 
         [HttpPost]
-        public IActionResult LobbyStart()
+        public IActionResult LobbyStart([FromForm] string lobby)
         {
-            if (!_turnManager.CanStart()) return BadRequest(new { error = "No hay suficientes jugadores" });
+            if (string.IsNullOrEmpty(lobby)) return BadRequest();
+            if (!_lobbyService.CanStart(lobby)) return BadRequest(new { error = "No hay suficientes jugadores" });
 
-            var gs = _turnManager.StartGameAndShuffleOrder();
+            var gs = _lobbyService.StartGame(lobby);
             return Json(new { ok = true, game = gs });
         }
-
 
         public IActionResult TirarDado()
         {
@@ -118,7 +126,6 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         public IActionResult Inactividad()
         {
             var jugador = _turnManager.GetJugadorActual();
-
             return View(model: jugador);
         }
 
@@ -174,7 +181,6 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
 
             return Json(new { server = respuesta });
         }
-
 
         [HttpPost]
         public IActionResult PasarTurnoAjax()

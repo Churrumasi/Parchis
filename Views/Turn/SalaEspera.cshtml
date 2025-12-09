@@ -1,6 +1,10 @@
 ﻿@{
     ViewData["Title"] = "Sala de Espera - Parchís Online";
-    var username = Context.Session.GetString("username") ?? "Invitado";
+    // Prefer server-provided username (set in controller) but fall back to session for backward compatibility
+    var username = ViewBag.Username as string ?? Context.Session.GetString("username");
+    var error = ViewBag.Error as string;
+    var lobbyMismatch = ViewBag.LobbyMismatch as bool? ?? false;
+    var serverLobbyId = ViewBag.LobbyId as string ?? "";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -14,49 +18,77 @@
 <body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-8">
     <div class="max-w-4xl mx-auto">
         <div class="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20">
-            <div class="text-center mb-8">
-                <h1 class="text-4xl font-bold text-white mb-2">Sala de Espera</h1>
-                <p class="text-white/70">Aquí se reúne la partida antes de entrar al tablero</p>
-            </div>
 
-            <div class="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m0-6a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                        <span class="text-white font-semibold" id="players-count">Jugadores: 0/4</span>
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="text-center py-20">
+                    <h2 class="text-2xl font-bold text-white mb-4">Sala no encontrada</h2>
+                    <p class="text-white/70 mb-6">No se ha encontrado una sesión válida o la sala no existe.</p>
+                    <div class="flex justify-center gap-4">
+                        <a href="/Cuenta/Login" class="px-6 py-3 rounded-lg bg-blue-500 text-white">Iniciar sesión</a>
+                        <a href="/Turn/GameLobby" class="px-6 py-3 rounded-lg bg-gray-700 text-white">Volver</a>
                     </div>
-                    <div id="status-pill" class="px-4 py-2 rounded-full bg-red-500/20 text-red-300">Se requieren 2-4 jugadores</div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold text-white mb-2">Sala de Espera</h1>
+                    <p class="text-white/70">Aquí se reúne la partida antes de entrar al tablero</p>
                 </div>
 
-                <div id="players-list" class="space-y-3">
-                    <!-- players will be rendered here -->
+                @if (lobbyMismatch)
+                {
+                    <div class="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+                        El identificador de sala no coincide con la sala actual del servidor. Comprueba el enlace o vuelve a intentar. No se iniciará ni se creará la partida automáticamente.
+                    </div>
+                }
+
+                <div class="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m0-6a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            <span class="text-white font-semibold" id="players-count">Jugadores: 0/4</span>
+                        </div>
+                        <div id="status-pill" class="px-4 py-2 rounded-full bg-red-500/20 text-red-300">Se requieren 2-4 jugadores</div>
+                    </div>
+
+                    <div id="players-list" class="space-y-3">
+                        <!-- players will be rendered here -->
+                    </div>
                 </div>
-            </div>
 
-            <div class="flex gap-4 mb-4">
-                <button id="btn-start" class="flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg" disabled>
-                    Iniciar Partida
-                </button>
-                <button id="btn-invite" class="px-6 py-4 rounded-xl font-bold bg-blue-500 hover:bg-blue-600 text-white">Invitar jugadores</button>
-                <button id="btn-exit" class="px-6 py-4 rounded-xl font-bold bg-red-500 hover:bg-red-600 text-white">Salir</button>
-            </div>
+                <div class="flex gap-4 mb-4">
+                    <button id="btn-start" class="flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg" disabled>
+                        Iniciar Partida
+                    </button>
+                    <button id="btn-invite" class="px-6 py-4 rounded-xl font-bold bg-blue-500 hover:bg-blue-600 text-white">Invitar jugadores</button>
+                    <button id="btn-exit" class="px-6 py-4 rounded-xl font-bold bg-red-500 hover:bg-red-600 text-white">Salir</button>
+                </div>
 
-            <div id="message" class="text-center text-sm text-white/70"></div>
+                <div id="message" class="text-center text-sm text-white/70"></div>
 
-            <div class="mt-6 text-center text-white/50 text-sm">
-                <p>Sala • ID: <span id="lobby-id">-</span></p>
-            </div>
+                <div class="mt-6 text-center text-white/50 text-sm">
+                    <p>Sala • ID: <span id="lobby-id">-</span></p>
+                </div>
+            }
+
         </div>
     </div>
 
+    @* Only include client-side lobby scripts when there is no server-side error and there is no lobby mismatch *@
+    @if (string.IsNullOrEmpty(error) && !lobbyMismatch)
+    {
     <script>
         (function(){
             const maxPlayers = 4;
             const minPlayers = 2;
             let players = [];
-            let lobbyId = null;
+            // server-provided lobby id
+            const serverLobbyId = '@(serverLobbyId)'.replace(/'/g, "\\'");
+            let lobbyId = serverLobbyId || null;
 
-            const username = '@username'.replace(/'/g, "\\'");
+            const username = '@(username ?? "Invitado")'.replace(/'/g, "\\'");
             let myId = null;
 
             const ALL_COLORS = ['rojo','azul','amarillo','verde'];
@@ -137,14 +169,14 @@
 
             conn.on('Joined', data => {
                 myId = data.id;
-                lobbyId = data.lobbyId;
+                lobbyId = data.lobbyId || lobbyId;
                 lobbyIdEl.innerText = lobbyId;
              });
 
             conn.on('LobbyUpdated', payload => {
-                lobbyId = payload.lobbyId;
+                lobbyId = payload.lobbyId || lobbyId;
                 lobbyIdEl.innerText = lobbyId;
-                players = payload.players.map(p => ({ id: p.id, name: p.name, color: p.color || 'rojo', isHost: p.isHost, isReady: p.isReady }));
+                players = payload.players.map(p => ({ id: p.id, name: p.name, color: p.color || 'rojo', isHost: p.isHost, isReady: p.isReady }))
                 render();
             });
 
@@ -172,8 +204,13 @@
             conn.on('StartFailed', msg => showMessage(msg, true));
 
             conn.start().then(() => {
-                // automatically join lobby with username
-                conn.invoke('Join', username).catch(err => console.error(err));
+                // automatically join lobby with username and serverLobbyId
+                if (!lobbyId) {
+                    console.error('No lobby id available to join');
+                    showMessage('No hay lobby disponible para unirse', true);
+                    return;
+                }
+                conn.invoke('Join', lobbyId, username).catch(err => console.error(err));
             }).catch(err => console.error(err));
 
             // interpret closing the tab/window as abandoning the partida.
@@ -185,6 +222,7 @@
                 if (myId) {
                     const body = new URLSearchParams();
                     body.append('id', myId);
+                    body.append('lobby', lobbyId || serverLobbyId);
                     // sendBeacon accepts ArrayBufferView, Blob, or string; use Blob for content-type
                     if (navigator.sendBeacon) {
                         const blob = new Blob([body.toString()], { type: 'application/x-www-form-urlencoded' });
@@ -240,21 +278,49 @@
                 const existingReady = document.getElementById('btn-ready');
                 if (!viewerIsHostLocal) {
                     if (!existingReady) {
-                        const btn = document.createElement('button');
-                        btn.id = 'btn-ready';
-                        btn.className = 'flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-lg';
-                        btn.innerText = 'Preparado';
-                        btn.addEventListener('click', () => {
+                        // create a container with main ready button and a small deselect button
+                        const container = document.createElement('div');
+                        container.className = 'flex-1 flex gap-3';
+
+                        const main = document.createElement('button');
+                        main.id = 'btn-ready';
+                        main.className = 'flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-lg';
+                        main.innerText = 'Preparado';
+                        main.addEventListener('click', () => {
                             const me2 = players.find(p => p.id === myId);
                             if (!me2) return;
                             const newReady = !me2.isReady;
                             conn.invoke('SetReady', newReady).catch(err => console.error(err));
                         });
-                        btnStart.parentNode.replaceChild(btn, btnStart);
+
+                        const deselect = document.createElement('button');
+                        deselect.id = 'btn-unready';
+                        deselect.className = 'px-4 py-4 rounded-xl font-semibold bg-gray-600 text-white hover:bg-gray-700';
+                        deselect.innerText = 'Quitar';
+                        deselect.style.display = 'none';
+                        deselect.addEventListener('click', () => {
+                            // explicitly set not ready
+                            const me2 = players.find(p => p.id === myId);
+                            if (!me2 || !me2.isReady) return;
+                            conn.invoke('SetReady', false).catch(err => console.error(err));
+                        });
+
+                        container.appendChild(main);
+                        container.appendChild(deselect);
+
+                        btnStart.parentNode.replaceChild(container, btnStart);
                     } else {
-                        // update text according to state
+                        // update text and styles according to state
                         const me2 = players.find(p => p.id === myId) || { isReady: false };
+                        // existingReady is the main button in the two-button control
                         existingReady.innerText = me2.isReady ? 'Listo ✓' : 'Preparado';
+                        if (me2.isReady) {
+                            existingReady.className = 'flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg';
+                        } else {
+                            existingReady.className = 'flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-lg';
+                        }
+                        const deselectBtn = document.getElementById('btn-unready');
+                        if (deselectBtn) deselectBtn.style.display = me2.isReady ? 'inline-block' : 'none';
                     }
                 } else {
                     // remove ready button if exists and restore start button placeholder
@@ -277,5 +343,21 @@
             render();
         })();
     </script>
+    }
+
+    @* If there is a lobby mismatch, disable client controls to avoid creating a new lobby *@
+    @if (lobbyMismatch)
+    {
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            const btnStart = document.getElementById('btn-start');
+            const btnInvite = document.getElementById('btn-invite');
+            const btnExit = document.getElementById('btn-exit');
+            if (btnStart) { btnStart.disabled = true; btnStart.title = 'No disponible en lobby inválido'; }
+            if (btnInvite) { btnInvite.disabled = true; btnInvite.title = 'No disponible en lobby inválido'; }
+            if (btnExit) { /* allow exit to go back */ }
+        });
+    </script>
+    }
 </body>
 </html>
