@@ -1,5 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Sala de Espera - Parchís Online";
+    var username = Context.Session.GetString("username") ?? "Invitado";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -8,6 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"]</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@7/dist/browser/signalr.min.js"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-8">
     <div class="max-w-4xl mx-auto">
@@ -21,7 +23,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m0-6a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                        <span class="text-white font-semibold" id="players-count">Jugadores: 2/4</span>
+                        <span class="text-white font-semibold" id="players-count">Jugadores: 0/4</span>
                     </div>
                     <div id="status-pill" class="px-4 py-2 rounded-full bg-red-500/20 text-red-300">Se requieren 2-4 jugadores</div>
                 </div>
@@ -35,13 +37,14 @@
                 <button id="btn-start" class="flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg" disabled>
                     Iniciar Partida
                 </button>
-                <button id="btn-add" class="px-6 py-4 rounded-xl font-bold bg-blue-500 hover:bg-blue-600 text-white">+ Jugador</button>
+                <button id="btn-invite" class="px-6 py-4 rounded-xl font-bold bg-blue-500 hover:bg-blue-600 text-white">Invitar jugadores</button>
+                <button id="btn-exit" class="px-6 py-4 rounded-xl font-bold bg-red-500 hover:bg-red-600 text-white">Salir</button>
             </div>
 
             <div id="message" class="text-center text-sm text-white/70"></div>
 
             <div class="mt-6 text-center text-white/50 text-sm">
-                <p>Sala de demostración • ID: #DEMO-LOBBY</p>
+                <p>Sala • ID: <span id="lobby-id">-</span></p>
             </div>
         </div>
     </div>
@@ -50,10 +53,11 @@
         (function(){
             const maxPlayers = 4;
             const minPlayers = 2;
-            let players = [
-                { id: 1, name: 'Ana', color: 'rojo', isHost: true },
-                { id: 2, name: 'Luis', color: 'azul', isHost: false }
-            ];
+            let players = [];
+            let lobbyId = null;
+
+            const username = '@username'.replace(/'/g, "\\'");
+            let myId = null;
 
             const ALL_COLORS = ['rojo','azul','amarillo','verde'];
 
@@ -61,28 +65,10 @@
             const playersCountEl = document.getElementById('players-count');
             const statusPill = document.getElementById('status-pill');
             const btnStart = document.getElementById('btn-start');
-            const btnAdd = document.getElementById('btn-add');
+            const btnInvite = document.getElementById('btn-invite');
+            const btnExit = document.getElementById('btn-exit');
             const msg = document.getElementById('message');
-
-            function reindexPlayers() {
-                // Ensure host is always at index 0 (player 1)
-                const host = players.find(p => p.isHost);
-                const others = players.filter(p => !p.isHost);
-                const ordered = host ? [host, ...others] : [...others];
-                players = ordered.map((p, idx) => {
-                    const newId = idx + 1;
-                    let name = p.name;
-                    if (p.name && p.name.startsWith('Jugador ')) {
-                        name = 'Jugador ' + newId;
-                    }
-                    return { ...p, id: newId, name };
-                });
-            }
-
-             function getAvailableColors() {
-                 const used = players.map(p => p.color);
-                 return ALL_COLORS.filter(c => !used.includes(c));
-             }
+            const lobbyIdEl = document.getElementById('lobby-id');
 
             function colorToBg(color) {
                 switch(color) {
@@ -96,23 +82,24 @@
 
             function render() {
                 playersList.innerHTML = '';
-                players.forEach(p => {
+                const viewerIsHost = myId && players.some(x => x.id === myId && x.isHost);
+                players.forEach((p, idx) => {
                     const el = document.createElement('div');
                     el.className = 'bg-white/5 rounded-xl p-4 flex items-center justify-between hover:bg-white/10 transition-colors';
                     el.innerHTML = `
                         <div class="flex items-center gap-3"> 
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br ${colorToBg(p.color)}">${p.id}</div>
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br ${colorToBg(p.color)}">${idx+1}</div>
                             <div>
                                 <div class="text-white font-medium">${p.name}</div>
                                 <div class="text-sm text-white/60">${p.color} ${p.isHost ? '• Anfitrión' : ''}</div>
                             </div>
                         </div>
                         <div>
-                            ${p.isHost ? '<span class="text-yellow-300 text-sm font-semibold">Anfitrión</span>' : `<button data-id="${p.id}" class="text-red-400 hover:text-red-300 text-sm font-medium ml-4 remove-btn">Expulsar</button>`}
+                            ${p.isHost ? '<span class="text-yellow-300 text-sm font-semibold">Anfitrión</span>' : (viewerIsHost ? `<button data-id="${p.id}" class="text-red-400 hover:text-red-300 text-sm font-medium ml-4 remove-btn">Expulsar</button>` : '')}
                         </div>
                      `;
                      playersList.appendChild(el);
-                 });
+                });
 
                 const emptySlots = maxPlayers - players.length;
                 for (let i = 0; i < emptySlots; i++) {
@@ -131,39 +118,9 @@
                 // attach remove handlers
                 const removes = document.querySelectorAll('.remove-btn');
                 removes.forEach(r => r.addEventListener('click', e => {
-                    const id = parseInt(e.target.getAttribute('data-id'));
-                    removePlayer(id);
+                    const id = e.target.getAttribute('data-id');
+                    if (conn && conn.invoke) conn.invoke('RemovePlayer', id).catch(err => console.error(err));
                 }));
-            }
-
-            function addPlayer() {
-                if (players.length >= maxPlayers) {
-                    showMessage('Sala llena. Máximo ' + maxPlayers + ' jugadores', true);
-                    return;
-                }
-                const available = getAvailableColors();
-                if (available.length === 0) {
-                    showMessage('No hay colores disponibles para nuevos jugadores', true);
-                    return;
-                }
-                const color = available[Math.floor(Math.random() * available.length)];
-                const id = players.length ? (Math.max(...players.map(p => p.id)) + 1) : 1;
-                const shouldBeHost = !players.some(p => p.isHost);
-                players.push({ id: id, name: 'Jugador ' + id, color: color, isHost: shouldBeHost });
-                reindexPlayers();
-                render();
-            }
-
-            function removePlayer(id) {
-                const target = players.find(p => p.id === id);
-                if (!target) return;
-                if (target.isHost) {
-                    showMessage('No se puede expulsar al anfitrión', true);
-                    return;
-                }
-                players = players.filter(p => p.id !== id);
-                reindexPlayers();
-                render();
             }
 
             function showMessage(text, danger) {
@@ -172,31 +129,151 @@
                 setTimeout(() => { msg.innerText = ''; msg.className = 'text-center text-sm text-white/70'; }, 3000);
             }
 
-            btnAdd.addEventListener('click', addPlayer);
+            // SignalR connection
+            const conn = new signalR.HubConnectionBuilder()
+                .withUrl('/lobbyHub')
+                .withAutomaticReconnect()
+                .build();
 
-            btnStart.addEventListener('click', () => {
-                if (players.length < minPlayers) {
-                    showMessage('No hay suficientes jugadores', true);
-                    return;
-                }
-                // Visual countdown then redirect to board (EsTuTurno)
-                btnStart.disabled = true;
-                let sec = 3;
-                const original = btnStart.innerText;
-                btnStart.innerText = 'Iniciando... ' + sec;
-                const timer = setInterval(() => {
-                    sec--;
-                    if (sec <= 0) {
-                        clearInterval(timer);
-                        // redirect to controller action that shows the board
-                        window.location.href = '/Turn/EsTuTurno';
-                    } else {
-                        btnStart.innerText = 'Iniciando... ' + sec;
-                    }
-                }, 1000);
+            conn.on('Joined', data => {
+                myId = data.id;
+                lobbyId = data.lobbyId;
+                lobbyIdEl.innerText = lobbyId;
+             });
+
+            conn.on('LobbyUpdated', payload => {
+                lobbyId = payload.lobbyId;
+                lobbyIdEl.innerText = lobbyId;
+                players = payload.players.map(p => ({ id: p.id, name: p.name, color: p.color || 'rojo', isHost: p.isHost, isReady: p.isReady }));
+                render();
             });
 
-            // initial render
+            // This client was kicked by the host
+            conn.on('YouWereKicked', () => {
+                showMessage('Has sido expulsado de la sala', true);
+                setTimeout(() => { window.location.href = '/Cuenta/Login'; }, 1500);
+            });
+            
+            conn.on('LobbyClosed', () => {
+                showMessage('La sala ha sido cerrada por el anfitrión', true);
+                setTimeout(() => { window.location.href = '/Cuenta/Login'; }, 1500);
+            });
+            
+            conn.on('ExitOk', () => {
+                window.location.href = '/Cuenta/Login';
+            });
+
+            conn.on('GameStarted', gs => {
+                // redirect to tablero when game starts
+                window.location.href = '/Turn/EsTuTurno';
+            });
+
+            conn.on('ActionDenied', msg => showMessage(msg, true));
+            conn.on('StartFailed', msg => showMessage(msg, true));
+
+            conn.start().then(() => {
+                // automatically join lobby with username
+                conn.invoke('Join', username).catch(err => console.error(err));
+            }).catch(err => console.error(err));
+
+            // interpret closing the tab/window as abandoning the partida.
+            // Try to notify the server through SignalR 'Exit' (preferred). As a fallback (unreliable during unload)
+            // we also POST to the LobbyRemove controller using navigator.sendBeacon or a keepalive fetch.
+            function notifyExit() {
+                try { conn.invoke('Exit'); } catch (e) { /* ignore */ }
+
+                if (myId) {
+                    const body = new URLSearchParams();
+                    body.append('id', myId);
+                    // sendBeacon accepts ArrayBufferView, Blob, or string; use Blob for content-type
+                    if (navigator.sendBeacon) {
+                        const blob = new Blob([body.toString()], { type: 'application/x-www-form-urlencoded' });
+                        navigator.sendBeacon('/Turn/LobbyRemove', blob);
+                    } else {
+                        // fetch with keepalive for browsers that support it
+                        try {
+                            fetch('/Turn/LobbyRemove', { method: 'POST', body: body, keepalive: true });
+                        } catch (e) { /* best effort */ }
+                    }
+                }
+            }
+
+            window.addEventListener('pagehide', notifyExit);
+            window.addEventListener('beforeunload', notifyExit);
+
+            btnStart.addEventListener('click', () => {
+                conn.invoke('StartGame').catch(err => console.error(err));
+            });
+
+            btnInvite.addEventListener('click', async () => {
+                if (!lobbyId) { showMessage('Aún no hay lobby creado', true); return; }
+                const link = `${window.location.origin}/Turn/SalaEspera?lobby=${lobbyId}`;
+                try {
+                    await navigator.clipboard.writeText(link);
+                    showMessage('Enlace copiado al portapapeles');
+                } catch (e) {
+                    prompt('Copia el enlace manualmente', link);
+                }
+            });
+            
+            btnExit.addEventListener('click', () => {
+                if (myId == null) { window.location.href = '/Cuenta/Login'; return; }
+                conn.invoke('Exit').catch(err => console.error(err));
+            });
+
+            // Only host should see start/expel; guests see Ready button which notifies server
+            function updateControlsForRole() {
+                const me = players.find(p => p.id === myId);
+                const viewerIsHostLocal = me && me.isHost;
+
+                // show/hide start button
+                if (viewerIsHostLocal) {
+                    btnStart.style.display = 'inline-block';
+                } else {
+                    btnStart.style.display = 'none';
+                }
+
+                // ensure invite button always visible
+                btnInvite.style.display = 'inline-block';
+
+                // ready button for guests
+                const existingReady = document.getElementById('btn-ready');
+                if (!viewerIsHostLocal) {
+                    if (!existingReady) {
+                        const btn = document.createElement('button');
+                        btn.id = 'btn-ready';
+                        btn.className = 'flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-lg';
+                        btn.innerText = 'Preparado';
+                        btn.addEventListener('click', () => {
+                            const me2 = players.find(p => p.id === myId);
+                            if (!me2) return;
+                            const newReady = !me2.isReady;
+                            conn.invoke('SetReady', newReady).catch(err => console.error(err));
+                        });
+                        btnStart.parentNode.replaceChild(btn, btnStart);
+                    } else {
+                        // update text according to state
+                        const me2 = players.find(p => p.id === myId) || { isReady: false };
+                        existingReady.innerText = me2.isReady ? 'Listo ✓' : 'Preparado';
+                    }
+                } else {
+                    // remove ready button if exists and restore start button placeholder
+                    if (existingReady) {
+                        const placeholder = document.createElement('button');
+                        placeholder.id = 'btn-start';
+                        placeholder.className = 'flex-1 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg';
+                        placeholder.innerText = 'Iniciar Partida';
+                        placeholder.addEventListener('click', () => conn.invoke('StartGame').catch(err => console.error(err)));
+                        existingReady.parentNode.replaceChild(placeholder, existingReady);
+                    }
+                }
+            }
+
+            // call role update after render
+            const originalRender = render;
+            render = function() { originalRender(); updateControlsForRole(); };
+
+            // initial empty render
             render();
         })();
     </script>

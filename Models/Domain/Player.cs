@@ -11,5 +11,7 @@ namespace caso_de_uso_6_ejercer_turno.Models.Domain
         public string Estado { get; set; } = "esperando";
         // Indica si este jugador es el anfitrión (host) de la sala
         public bool IsHost { get; set; } = false;
+        // Indica si el jugador marcó 'listo' en la sala de espera
+        public bool IsReady { get; set; } = false;
     }
 }

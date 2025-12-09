@@ -8,5 +8,7 @@ namespace caso_de_uso_6_ejercer_turno.Models.Domain
         public List<Player> Jugadores { get; set; } = new List<Player>();
         public int IndiceJugadorActual { get; set; } = 0;
         public string Estado { get; set; } = "en curso";
+        // Nombre del propietario/anfitrión esperado para esta sala (opcional)
+        public string OwnerName { get; set; }
     }
 }

@@ -28,8 +28,40 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         }
 
         // Nueva acción para mostrar la sala de espera entre login y tablero
-        public IActionResult SalaEspera()
+        public IActionResult SalaEspera(string lobby)
         {
+            // Documentación:
+            // - Si el usuario llega sin el query string 'lobby' (flujo normal tras login),
+            //   interpretamos que está creando una nueva sala y reservamos su username
+            //   como propietario (host). Esto garantiza que cuando invoque "Join",
+            //   el servidor marque a ese usuario como anfitrión.
+            // - Si el usuario llega con '?lobby=...' intentamos validar que el id
+            //   coincide con el id de sala actual en el servidor. En este demo el
+            //   servidor mantiene un único lobby en memoria; para múltiples lobbies
+            //   sería necesario un gestor de lobbies por id.
+
+            var username = HttpContext.Session.GetString("username") ?? "Invitado";
+
+            if (string.IsNullOrEmpty(lobby))
+            {
+                // Sin parámetro: usuario está creando/abriendo la sala -> marcar como owner
+                _turnManager.SetOwnerName(username);
+            }
+            else
+            {
+                // Con parámetro 'lobby': comprobamos si coincide con el id asignado por el servidor
+                var current = _turnManager.GetLobbyId();
+                if (!string.IsNullOrEmpty(lobby) && lobby != current)
+                {
+                    // En este ejemplo devolvemos la vista pero el cliente será notificado
+                    // de que el id no coincide. En una implementación real deberíamos
+                    // buscar el lobby por id dentro de un gestor y devolver error 404/403 si no existe.
+                    ViewBag.LobbyMismatch = true;
+                }
+            }
+
+            ViewBag.LobbyId = _turnManager.GetLobbyId();
+            ViewBag.Username = username;
             return View();
         }
 

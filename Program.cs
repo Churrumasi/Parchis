@@ -32,6 +32,7 @@ builder.Services.AddHostedService<GameOrchestratorHostedService>();
 builder.Services.AddScoped<UsuarioRegistradoEventHandler>();
 builder.Services.AddScoped<CuentaService>();
 builder.Services.AddSingleton<SocketGameService>();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -63,6 +64,6 @@ app.MapGet("/", context =>
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Cuenta}/{action=Login}/{id?}");
+app.MapHub<caso_de_uso_6_ejercer_turno.Hubs.LobbyHub>("/lobbyHub");
 
 app.Run();
-        

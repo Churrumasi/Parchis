@@ -11,34 +11,45 @@ namespace caso_de_uso_6_ejercer_turno.Services
         private readonly IEventBus _bus;
         private static readonly List<string> ALL_COLORS = new() { "rojo", "azul", "amarillo", "verde" };
 
+        /// <summary>
+        /// Crea un nuevo TurnManager y genera un identificador corto de sala (IdPartida).
+        /// Nota: actualmente el TurnManager mantiene un único estado de partida en memoria.
+        /// El IdPartida se genera aquí y se asigna al estado de juego para identificar la
+        /// sala en las comunicaciones con clientes (SignalR). Para soportar múltiples lobbies
+        /// concurrentes se debe introducir un servicio gestor de lobbies que mantenga
+        /// múltiples instancias de GameState por Id.
+        /// </summary>
         public TurnManager(IEventBus bus)
         {
             _bus = bus;
-            // Inicializar con fichas en posiciones visibles para testing
-            _game.Jugadores.Add(new Player {
-                Nombre = "Ana",
-                ColorFichas = "rojo",
-                PosicionesFichas = new List<int> { 38, 39, 40, -1 },
-                IsHost = true
-            });
-            _game.Jugadores.Add(new Player {
-                Nombre = "Luis",
-                ColorFichas = "azul",
-                PosicionesFichas = new List<int> { 12, 13, 14, -1 }
-            });
-            _game.Jugadores.Add(new Player {
-                Nombre = "María",
-                ColorFichas = "amarillo",
-                PosicionesFichas = new List<int> { 4, 5, 6, -1 }
-            });
-            _game.Jugadores.Add(new Player {
-                Nombre = "José",
-                ColorFichas = "verde",
-                PosicionesFichas = new List<int> { 55, 56, 57, -1 }
-            });
+            // Inicializar lobby vacío y generar un id corto de sala
+            // IdPartida: valor alfanumérico corto generado en el servidor, por ejemplo "a1b2c3d4".
+            // Se utiliza para construir links de invitación y para agrupar conexiones SignalR.
+            _game.Jugadores = new List<Player>();
+            _game.IdPartida = System.Guid.NewGuid().ToString("N").Substring(0, 8);
+            _game.Estado = "lobby";
+            // OwnerName: si se establece, ese nombre de usuario será considerado el creador/anfitrión
+            _game.OwnerName = null;
         }
 
+        /// <summary>
+        /// Reserva el nombre de usuario que será el anfitrión de la sala.
+        /// Llamar esto antes de AddPlayer si quieres garantizar que un usuario concreto
+        /// sea tratado como anfitrión aunque otros se unan antes.
+        /// </summary>
+        public void SetOwnerName(string ownerName)
+        {
+            _game.OwnerName = ownerName;
+        }
+
+        /// <summary>
+        /// Devuelve el identificador de la sala actual asignado por el servidor.
+        /// Los clientes deben usar este valor para generar/validar enlaces de invitación
+        /// y para unirse a la sala correcta mediante SignalR.
+        /// </summary>
         public GameState GetGameState() => _game;
+
+        public string GetLobbyId() => _game.IdPartida;
 
         public Player GetJugadorActual()
         {
@@ -88,9 +99,28 @@ namespace caso_de_uso_6_ejercer_turno.Services
         public bool CanStart(int minPlayers = 2, int maxPlayers = 4)
         {
             var count = _game.Jugadores.Count;
-            return count >= minPlayers && count <= maxPlayers;
+            if (!(count >= minPlayers && count <= maxPlayers)) return false;
+            // Only allow starting when ALL non-host players are marked as ready
+            // Host does not need to be ready; we require that every invited player has IsReady == true
+            return _game.Jugadores.All(p => p.IsHost || p.IsReady);
         }
 
+        /// <summary>
+        /// Devuelve la lista de jugadores no anfitrones que aún no están preparados.
+        /// Útil para informar por qué no se puede iniciar la partida.
+        /// </summary>
+        public IEnumerable<Player> GetNotReadyPlayers()
+        {
+            return _game.Jugadores.Where(p => !p.IsHost && !p.IsReady).ToList();
+        }
+
+        /// <summary>
+        /// Añade un jugador al lobby actual. Si no existe host en el lobby, el primer jugador
+        /// añadido será marcado como anfitrión (IsHost = true).
+        /// </summary>
+        /// <param name="nombre">Nombre de usuario</param>
+        /// <param name="color">Color deseado (opcional)</param>
+        /// <returns>Instancia del jugador añadido</returns>
         public Player AddPlayer(string nombre, string color)
         {
             if (string.IsNullOrWhiteSpace(nombre)) nombre = "Jugador";
@@ -110,14 +140,34 @@ namespace caso_de_uso_6_ejercer_turno.Services
             }
 
             var player = new Player
-            {
-                Nombre = nombre,
-                ColorFichas = chosenColor,
-                // si no hay anfitrión, el primer jugador añadido será el anfitrión
-                IsHost = !_game.Jugadores.Any(j => j.IsHost)
-            };
+             {
+                 Nombre = nombre,
+                 ColorFichas = chosenColor,
+                // primer jugador que se añade será anfitrión si no hay host
+                // Si se reservó un OwnerName en el turno de creación, el jugador cuyo nombre
+                // coincida con OwnerName recibirá IsHost = true; el resto serán invitados.
+                IsHost = !_game.Jugadores.Any(j => j.IsHost) && (_game.OwnerName == null || _game.OwnerName == nombre)
+             };
             _game.Jugadores.Add(player);
+
+            // publicar evento
+            _bus.Publish(new PlayerJoinedEvent { IdJugador = player.IdJugador, Nombre = player.Nombre, IdPartida = _game.IdPartida });
+
             return player;
+        }
+
+        /// <summary>
+        /// Marca/desmarca al jugador como preparado en el lobby.
+        /// </summary>
+        public void SetPlayerReady(string idJugador, bool ready)
+        {
+            var p = _game.Jugadores.FirstOrDefault(j => j.IdJugador == idJugador);
+            if (p != null)
+            {
+                p.IsReady = ready;
+                // publicar evento opcional para EDA
+                // _bus.Publish(new PlayerReadyEvent { IdJugador = p.IdJugador, Ready = ready, IdPartida = _game.IdPartida });
+            }
         }
 
         public bool RemovePlayer(string idJugador)
@@ -132,6 +182,9 @@ namespace caso_de_uso_6_ejercer_turno.Services
             {
                 _game.IndiceJugadorActual = System.Math.Max(0, _game.Jugadores.Count - 1);
             }
+
+            _bus.Publish(new PlayerLeftEvent { IdJugador = p.IdJugador, Nombre = p.Nombre, IdPartida = _game.IdPartida });
+
             return true;
         }
 
@@ -149,7 +202,21 @@ namespace caso_de_uso_6_ejercer_turno.Services
                 first.Estado = "jugando";
                 _bus.Publish(new TurnoIniciadoEvent { IdJugador = first.IdJugador });
             }
+
+            _bus.Publish(new LobbyStartedEvent { IdPartida = _game.IdPartida });
+
             return _game;
+        }
+
+        /// <summary>
+        /// Cierra el lobby actual y publica un evento de cierre.
+        /// </summary>
+        public void CloseLobby()
+        {
+            var id = _game.IdPartida;
+            _game.Jugadores.Clear();
+            _game.Estado = "closed";
+            _bus.Publish(new LobbyClosedEvent { IdPartida = id });
         }
 
     }

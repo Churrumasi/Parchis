@@ -1,10 +1,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31912.275
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11222.15 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "caso_de_uso_6_ejercer_turno", "caso_de_uso_6_ejercer_turno.csproj", "{FCE57747-1406-4136-BDA6-D43CFEF0AB0A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServidorParchis", "..\ServidorParchis\ServidorParchis.csproj", "{6673F425-FE1A-417A-BA21-F09734ED426B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServidorParchis", "..\ServidorParchis\ServidorParchis.csproj", "{4F60AF0F-D9CC-4F34-8E67-6F2B69D71473}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -16,12 +16,15 @@ Global
 		{FCE57747-1406-4136-BDA6-D43CFEF0AB0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCE57747-1406-4136-BDA6-D43CFEF0AB0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCE57747-1406-4136-BDA6-D43CFEF0AB0A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6673F425-FE1A-417A-BA21-F09734ED426B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6673F425-FE1A-417A-BA21-F09734ED426B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6673F425-FE1A-417A-BA21-F09734ED426B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6673F425-FE1A-417A-BA21-F09734ED426B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F60AF0F-D9CC-4F34-8E67-6F2B69D71473}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F60AF0F-D9CC-4F34-8E67-6F2B69D71473}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F60AF0F-D9CC-4F34-8E67-6F2B69D71473}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F60AF0F-D9CC-4F34-8E67-6F2B69D71473}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7F0B4089-8183-4CAF-8E48-4A5CA1ED6A1A}
 	EndGlobalSection
 EndGlobal
