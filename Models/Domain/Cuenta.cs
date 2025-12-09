@@ -21,7 +21,7 @@ namespace caso_de_uso_6_ejercer_turno.Models.Domain
         public bool CorreoElectronicoConfirmado { get; set; } = true;
 
         [Required]
-        public string ContraseñaHash { get; set; }
+        public string ContrasenaHash { get; set; }
 
         public bool Activo { get; set; } = true;
 

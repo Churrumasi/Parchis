@@ -14,7 +14,7 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         }
 
         // ============================
-        // GET: Cuenta/Login
+        // GET: Login
         // ============================
         public IActionResult Login()
         {
@@ -22,28 +22,38 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         }
 
         // ============================
-        // POST: Cuenta/Login
+        // POST: Login
         // ============================
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Login(LoginViewModel model)
-{
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Completa todos los campos.";
+                return View(model);
+            }
 
-    var usuario = new
-    {
-        NombreUsuario = model.Username == null || model.Username == "" 
-                        ? "UsuarioPrueba" 
-                        : model.Username
-    };
+            var usuario = await _cuentaService.LoginAsync(model.Username, model.Password);
 
-    TempData["SuccessMessage"] = "Bienvenido " + usuario.NombreUsuario + "!";
-    // guardar username en sesión para usarlo en la sala de espera
-    HttpContext.Session.SetString("username", usuario.NombreUsuario);
-    // Redirigir primero a la pantalla de selección (GameLobby) antes de entrar al lobby
-    return RedirectToAction("GameLobby", "Turn");
-}
+            if (usuario == null)
+            {
+                TempData["ErrorMessage"] = "Usuario o contraseña incorrectos.";
+                return View(model);
+            }
+
+            // Login exitoso
+            TempData["SuccessMessage"] = "Bienvenido " + usuario.NombreUsuario + "!";
+
+            // Guardar nombre en sesión
+            HttpContext.Session.SetString("username", usuario.NombreUsuario);
+
+            // Redirige al lobby
+             return RedirectToAction("GameLobby", "Turn");
+        }
+
         // ============================
-        // GET: Cuenta/Registrar
+        // GET: Registrar
         // ============================
         public IActionResult Registrar()
         {
@@ -51,101 +61,37 @@ public async Task<IActionResult> Login(LoginViewModel model)
         }
 
         // ============================
-        // POST: Cuenta/Registrar
+        // POST: Registrar
         // ============================
-       [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Registrar(RegisterViewModel model)
-{
-    if (!ModelState.IsValid)
-        return View(model);
-
-    bool registrado = await _cuentaService.RegistrarUsuarioAsync(model);
-
-    if (!registrado)
-    {
-        TempData["ErrorMessage"] = "El nombre de usuario ya está registrado.";
-        return View(model);
-    }
-
-    TempData["SuccessMessage"] = "¡Registro exitoso! Ahora inicia sesión.";
-    return RedirectToAction("Login");
-}
-
-        // ============================
-        // GET: Cuenta/Logout
-        // ============================
-        public IActionResult Logout()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Registrar(RegisterViewModel model)
         {
-            TempData["InfoMessage"] = "Has cerrado sesión correctamente";
+            if (!ModelState.IsValid)
+            {
+                var errores = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                // Puedes ver 'errores' en el debug
+                TempData["ErrorMessage"] = string.Join(" | ", errores);
+
+                return View(model);
+            }
+
+            bool creado = await _cuentaService.RegistrarUsuarioAsync(model);
+
+            if (!creado)
+            {
+                TempData["ErrorMessage"] = "El nombre de usuario ya está en uso.";
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = "Usuario creado con éxito. Ahora puedes iniciar sesión.";
+
+            // Redirige al login
             return RedirectToAction("Login");
-        }
-
-        // ============================
-        // GET: Cuenta/ForgotPassword
-        // ============================
-        public IActionResult ForgotPassword()
-        {
-            return View();
-        }
-
-        // ============================
-        // POST: Cuenta/ForgotPassword
-        // ============================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ForgotPassword(ContraseñaOlvidadaVM model)
-        {
-            if (ModelState.IsValid)
-            {
-                TempData["SuccessMessage"] = "Si el correo existe, recibirás un email con instrucciones";
-                return RedirectToAction("ForgotPasswordConfirmation");
-            }
-
-            return View(model);
-        }
-
-        // ============================
-        // GET: Cuenta/ForgotPasswordConfirmation
-        // ============================
-        public IActionResult ForgotPasswordConfirmation()
-        {
-            return View();
-        }
-
-        // ============================
-        // GET: Cuenta/ResetPassword
-        // ============================
-        public IActionResult ResetPassword(string email, string token)
-        {
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
-            {
-                return RedirectToAction("Login");
-            }
-
-            var model = new ResetPasswordViewModel
-            {
-                Email = email,
-                Token = token
-            };
-
-            return View(model);
-        }
-
-        // ============================
-        // POST: Cuenta/ResetPassword
-        // ============================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                TempData["SuccessMessage"] = "Tu contraseña ha sido restablecida correctamente";
-                return RedirectToAction("Login");
-            }
-
-            return View(model);
         }
     }
 }

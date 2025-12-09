@@ -36,7 +36,7 @@ public async Task<bool> RegistrarUsuarioAsync(RegisterViewModel model)
         NombreUsuarioNormalizado = usuarioNormalizado,
         CorreoElectronico = model.Email.Trim(),
         CorreoElectronicoConfirmado = false,
-        ContraseñaHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+        ContrasenaHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
         Activo = true,
         FechaAlta = DateTime.Now,
         UsuarioAlta = model.Username
@@ -61,7 +61,7 @@ public async Task<Cuenta?> LoginAsync(string username, string password)
     if (usuario == null)
         return null;
 
-    bool contraseñaCorrecta = BCrypt.Net.BCrypt.Verify(password, usuario.ContraseñaHash);
+    bool contraseñaCorrecta = BCrypt.Net.BCrypt.Verify(password, usuario.ContrasenaHash);
 
     return contraseñaCorrecta ? usuario : null;
         }
