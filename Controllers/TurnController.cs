@@ -17,8 +17,7 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             _lobbyService = lobbyService;
         }
 
-        public async Task<IActionResult> EsTuTurno(
-    [FromServices] SocketGameService socket)
+        public async Task<IActionResult> EsTuTurno([FromServices] SocketGameService socket)
         {
             if (!socket.Conectado)
             {
@@ -29,17 +28,21 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             return View(model: jugador);
         }
 
-        // Nueva acción para mostrar la sala de espera entre login y tablero
+        // ======================================================
+        // LOGICA DE PROTECCIÓN DE SALA
+        // ======================================================
         public IActionResult SalaEspera(string lobby)
         {
             var username = HttpContext.Session.GetString("username");
 
+            // 1. SI NO ESTÁ LOGUEADO -> MANDAR AL LOGIN CON "MEMORIA"
             if (string.IsNullOrWhiteSpace(username))
             {
-                ViewBag.Error = "Sala no encontrada";
-                ViewBag.LobbyId = null;
-                ViewBag.Username = null;
-                return View();
+                // Construimos la URL a la que el usuario QUERÍA ir
+                string urlDestino = Url.Action("SalaEspera", "Turn", new { lobby = lobby });
+
+                // Lo mandamos al login, pasándole esa URL destino
+                return RedirectToAction("Login", "Cuenta", new { returnUrl = urlDestino });
             }
 
             if (string.IsNullOrEmpty(lobby))
@@ -57,7 +60,7 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
                     return RedirectToAction("GameLobby");
                 }
 
-                // If lobby exists, set owner name if owner is not set and this user created it earlier
+                // Si la sala existe y no tiene dueño (caso raro) o está vacía, asignar dueño
                 if (state.OwnerName == null && state.Jugadores.Count == 0)
                 {
                     state.OwnerName = username;
@@ -72,7 +75,11 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         // Nueva acción para mostrar la pantalla intermedia de selección (crear/unirse)
         public IActionResult GameLobby()
         {
-            var username = HttpContext.Session.GetString("username") ?? "Invitado";
+            var username = HttpContext.Session.GetString("username");
+
+            // Protección simple también aquí
+            if (string.IsNullOrEmpty(username)) return RedirectToAction("Login", "Cuenta");
+
             ViewBag.Username = username;
             return View();
         }
@@ -117,68 +124,35 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             return Json(new { ok = true, game = gs });
         }
 
-        public IActionResult TirarDado()
-        {
-            var jugador = _turnManager.GetJugadorActual();
-            return View(model: jugador);
-        }
-
-        public IActionResult Inactividad()
-        {
-            var jugador = _turnManager.GetJugadorActual();
-            return View(model: jugador);
-        }
-
+       
+        public IActionResult TirarDado() { return View(model: _turnManager.GetJugadorActual()); }
+        public IActionResult Inactividad() { return View(model: _turnManager.GetJugadorActual()); }
         public IActionResult SeleccionFicha(int valor)
         {
             ViewBag.ValorDado = valor;
-            var jugador = _turnManager.GetJugadorActual();
-            return View(model: jugador);
+            return View(model: _turnManager.GetJugadorActual());
         }
-
-        public IActionResult FinTurno()
-        {
-            var jugador = _turnManager.GetJugadorActual();
-            return View(model: jugador);
-        }
+        public IActionResult FinTurno() { return View(model: _turnManager.GetJugadorActual()); }
 
         [HttpPost]
-        public async Task<IActionResult> LanzarDadoAjax(
-    [FromServices] SocketGameService socket)
+        public async Task<IActionResult> LanzarDadoAjax([FromServices] SocketGameService socket)
         {
             var jugador = _turnManager.GetJugadorActual();
             if (jugador == null) return BadRequest("No hay jugador actual.");
 
-            await socket.EnviarAsync(new
-            {
-                type = "roll",
-                player = jugador.IdJugador
-            });
-
+            await socket.EnviarAsync(new { type = "roll", player = jugador.IdJugador });
             var respuesta = await socket.RecibirAsync();
-
             return Json(new { server = respuesta });
         }
 
         [HttpPost]
-        public async Task<IActionResult> MoverFichaAjax(
-    int indiceFicha, int desde, int hasta,
-    [FromServices] SocketGameService socket)
+        public async Task<IActionResult> MoverFichaAjax(int indiceFicha, int desde, int hasta, [FromServices] SocketGameService socket)
         {
             var jugador = _turnManager.GetJugadorActual();
             if (jugador == null) return BadRequest();
 
-            await socket.EnviarAsync(new
-            {
-                type = "move",
-                player = jugador.IdJugador,
-                piece = indiceFicha,
-                from = desde,
-                to = hasta
-            });
-
+            await socket.EnviarAsync(new { type = "move", player = jugador.IdJugador, piece = indiceFicha, from = desde, to = hasta });
             var respuesta = await socket.RecibirAsync();
-
             return Json(new { server = respuesta });
         }
 

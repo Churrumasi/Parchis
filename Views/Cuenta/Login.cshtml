@@ -80,8 +80,11 @@
         </div>
 
         <!-- Formulario de Login -->
-        <form asp-action="Login" asp-controller="Cuenta" method="post" class="space-y-4">
-            @Html.AntiForgeryToken()
+        <form asp-action="Login"
+              asp-controller="Cuenta"
+              asp-route-returnUrl="@Context.Request.Query["ReturnUrl"]"
+              method="post"
+              class="space-y-4">
             
             <!-- Usuario -->
             <div class="relative">

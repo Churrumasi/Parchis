@@ -1,25 +1,28 @@
-﻿using System.Net.Sockets;
+﻿using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json;
 
 public class ClienteParchis
 {
-    private TcpClient _cliente;
-    public int PlayerId { get; private set; }
-    public string Color { get; private set; }
-
-    public async Task ConectarAsync(string host = "localhost", int puerto = 9000)
+    public async Task ConectarYJugar()
     {
-        _cliente = new TcpClient();
-        await _cliente.ConnectAsync(host, puerto);
+        using (ClientWebSocket ws = new ClientWebSocket())
+        {
+            // Conectar
+            Uri serverUri = new Uri("ws://192.168.100.17:9000/parchis");
+            await ws.ConnectAsync(serverUri, CancellationToken.None);
+            Console.WriteLine("Conectado al servidor via C#");
 
-        // Leer asignación
-        var stream = _cliente.GetStream();
-        var buffer = new byte[1024];
-        int bytes = await stream.ReadAsync(buffer, 0, buffer.Length);
-        var json = Encoding.UTF8.GetString(buffer, 0, bytes);
-        var asignacion = JsonSerializer.Deserialize<JsonElement>(json);
-        PlayerId = asignacion.GetProperty("player").GetInt32();
-        Color = asignacion.GetProperty("color").GetString();
+            // Enviar mensaje "roll"
+            string mensaje = "{\"type\":\"roll\"}";
+            byte[] bytes = Encoding.UTF8.GetBytes(mensaje);
+
+            await ws.SendAsync(
+                new ArraySegment<byte>(bytes),
+                WebSocketMessageType.Text,
+                true,
+                CancellationToken.None);
+
+            // Aquí deberías tener un bucle para recibir mensajes (ReceiveAsync)
+        }
     }
 }

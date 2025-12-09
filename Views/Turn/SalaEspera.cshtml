@@ -243,12 +243,16 @@
                 conn.invoke('StartGame').catch(err => console.error(err));
             });
 
-            btnInvite.addEventListener('click', async () => {
+                btnInvite.addEventListener('click', async () => {
                 if (!lobbyId) { showMessage('Aún no hay lobby creado', true); return; }
+
+                // Generamos el link a la sala actual
                 const link = `${window.location.origin}/Turn/SalaEspera?lobby=${lobbyId}`;
+
                 try {
                     await navigator.clipboard.writeText(link);
-                    showMessage('Enlace copiado al portapapeles');
+                    // Mensaje actualizado para que el usuario sepa qué pasará
+                    showMessage('Link copiado. Si tu amigo no está logueado, se le pedirá iniciar sesión y entrará directo.');
                 } catch (e) {
                     prompt('Copia el enlace manualmente', link);
                 }

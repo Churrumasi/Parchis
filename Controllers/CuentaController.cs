@@ -16,8 +16,10 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         // ============================
         // GET: Login
         // ============================
-        public IActionResult Login()
+        // Recibimos el returnUrl (si alguien intentó entrar a una sala sin permiso)
+        public IActionResult Login(string returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             return View(new LoginViewModel());
         }
 
@@ -26,11 +28,13 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
         // ============================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model)
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
         {
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = "Completa todos los campos.";
+                // Importante: devolvemos el returnUrl a la vista por si falla el modelo
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
 
@@ -39,6 +43,7 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             if (usuario == null)
             {
                 TempData["ErrorMessage"] = "Usuario o contraseña incorrectos.";
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
 
@@ -48,8 +53,16 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
             // Guardar nombre en sesión
             HttpContext.Session.SetString("username", usuario.NombreUsuario);
 
-            // Redirige al lobby
-             return RedirectToAction("GameLobby", "Turn");
+            // ======================================================
+            // LÓGICA DE REDIRECCIÓN MÁGICA
+            // ======================================================
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            // Si no hay returnUrl, flujo normal
+            return RedirectToAction("GameLobby", "Turn");
         }
 
         // ============================
@@ -74,9 +87,7 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
                     .Select(e => e.ErrorMessage)
                     .ToList();
 
-                // Puedes ver 'errores' en el debug
                 TempData["ErrorMessage"] = string.Join(" | ", errores);
-
                 return View(model);
             }
 
@@ -90,7 +101,6 @@ namespace caso_de_uso_6_ejercer_turno.Controllers
 
             TempData["SuccessMessage"] = "Usuario creado con éxito. Ahora puedes iniciar sesión.";
 
-            // Redirige al login
             return RedirectToAction("Login");
         }
     }

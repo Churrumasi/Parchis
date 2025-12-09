@@ -667,6 +667,39 @@
 </div>
 
 <script>
+
+        // ==========================================
+    // 1. CONEXIÓN WEBSOCKET (AGREGAR ESTO AQUÍ)
+    // ==========================================
+
+    // Detectamos la IP con la que entraste a la web (ej: 192.168.100.17)
+    const ipServidor = window.location.hostname;
+
+    // 🔴 OJO: Forzamos el puerto 9000 para el juego
+    const wsUrl = `ws://${ipServidor}:9000/parchis`;
+
+    console.log("Conectando al juego en:", wsUrl);
+    let ws = new WebSocket(wsUrl);
+
+    // Eventos básicos del Socket para ver si funciona
+    ws.onopen = () => {
+        console.log("✅ ¡Conectado al Servidor de Juego (Puerto 9000)!");
+        // Opcional: Pedir el estado actual del juego al conectar
+    };
+
+    ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        console.log("📩 Mensaje recibido:", msg);
+
+        // AQUÍ AGREGARÁS LA LÓGICA PARA ACTUALIZAR EL TABLERO
+        if (msg.type === "rolled") {
+             document.getElementById('dice-result').innerText = `Jugador ${msg.player} sacó un ${msg.value}`;
+             // Actualizar visualmente el dado si quieres
+        }
+    };
+
+    ws.onerror = (error) => console.error("❌ Error en WebSocket:", error);
+
     // Generar el tablero de Parchís (15x15) basado en la imagen
     function generateBoard() {
         const board = document.getElementById('board');
